@@ -1,14 +1,30 @@
-import { hasScopeTrackMixin } from "@mat3ra/code/dist/js/entity/mixins/HasScopeTrackMixin";
-import { inMemoryEntityInSetMixin } from "@mat3ra/code/dist/js/entity/set/InMemoryEntityInSetMixin";
-import { inMemoryEntitySetMixin } from "@mat3ra/code/dist/js/entity/set/InMemoryEntitySetMixin";
-import { NamedInMemoryEntity } from "@mat3ra/code/dist/js/entity";
-import { AnyObject } from "@mat3ra/esse/dist/js/esse/types";
-import { computedEntityMixin } from "@mat3ra/ide/dist/js/compute";
+import { type NamedInMemoryEntity, InMemoryEntity } from "@mat3ra/code/dist/js/entity";
+import {
+    type Defaultable,
+    defaultableEntityMixin,
+} from "@mat3ra/code/dist/js/entity/mixins/DefaultableMixin";
+import {
+    type HasDescription,
+    hasDescriptionMixin,
+} from "@mat3ra/code/dist/js/entity/mixins/HasDescriptionMixin";
+import {
+    type HashedEntity,
+    hashedEntityMixin,
+} from "@mat3ra/code/dist/js/entity/mixins/HashedEntityMixin";
+import { namedEntityMixin } from "@mat3ra/code/dist/js/entity/mixins/NamedEntityMixin";
+import { Taggable, taggableMixin } from "@mat3ra/code/dist/js/entity/mixins/TaggableMixin";
+import type { AnyObject } from "@mat3ra/esse/dist/js/esse/types";
+import type {
+    JobSchema as EsseJobSchema,
+    ExtendedJobSchema,
+} from "@mat3ra/esse/dist/js/types";
+import { ComputedEntityMixin, computedEntityMixin } from "@mat3ra/ide/dist/js/compute";
 import type { Material } from "@mat3ra/made";
 import type WodeWorkflowType from "@mat3ra/wode/dist/js/Workflow";
 
 import { defaultDataset } from "./dataset";
 import { JOB_FINAL_STATUS_LIST, JobStatus } from "./enums";
+import { type JobSchemaMixin, jobSchemaMixin } from "./generated/JobSchemaMixin";
 
 // Static import for ESM compatibility (Vite/browser). Vite handles CJS→ESM
 // interop for Workflow.js so the default export is the Workflow class.
@@ -18,6 +34,12 @@ const WodeWorkflow = ((WodeWorkflowDefault as any).default ??
     WodeWorkflowDefault) as typeof WodeWorkflowType;
 
 /**
+ * Combined Job schema type from ESSE base + extended schemas.
+ * Uses Partial because not all fields are present at construction time.
+ */
+export type JobSchema = Partial<EsseJobSchema> & Partial<ExtendedJobSchema> & AnyObject;
+
+/**
  * A minimal entity reference — contains at least an `_id` to identify the entity.
  */
 export interface EntityReference {
@@ -25,38 +47,16 @@ export interface EntityReference {
     [key: string]: unknown;
 }
 
-/**
- * Shape of the minimal workflow JSON needed by Job.
- */
-export interface JobWorkflowSchema {
-    name: string;
-    subworkflows: unknown[];
-    units: unknown[];
-    workflows: unknown[];
-    [key: string]: unknown;
-}
-
-/**
- * Core shape of a Job's JSON representation.
- * Intentionally lightweight — the webapp extends this via WebappJobSchema.
- */
-export interface JobSchema {
-    _id?: string;
-    name?: string;
-    status?: JobStatus;
-    statusTrack?: Array<{ status: string; trackedAt: number }>;
-    workflow?: JobWorkflowSchema;
-    compute?: AnyObject;
-    owner?: EntityReference;
-    creator?: EntityReference;
-    _project?: EntityReference;
-    _material?: EntityReference;
-    _materials?: EntityReference[];
-    _materialsSet?: EntityReference;
-    parent?: EntityReference;
-    dataset?: typeof defaultDataset;
-    isEntitySet?: boolean;
-    [key: string]: unknown;
+interface Job
+    extends Defaultable,
+        NamedInMemoryEntity,
+        JobSchemaMixin,
+        Taggable,
+        HashedEntity,
+        ComputedEntityMixin,
+        HasDescription {
+    // TODO: fix ComputedEntityMixin and remove this
+    compute: EsseJobSchema["compute"];
 }
 
 /**
@@ -66,7 +66,7 @@ export interface JobSchema {
  * use in standalone packages (jove, job-designer) as well as in the web-app,
  * where a host-level subclass may extend it with DAO, Meteor, and routing integrations.
  */
-export class Job extends NamedInMemoryEntity {
+class Job extends InMemoryEntity {
     declare _json: JobSchema & AnyObject;
 
     _workflow?: WodeWorkflowType;
@@ -74,7 +74,7 @@ export class Job extends NamedInMemoryEntity {
     constructor(config: JobSchema) {
         super({ ...(config as AnyObject), _materialsSet: config._materialsSet || undefined });
 
-        this.dataset = this._json.dataset || defaultDataset;
+        this._json.dataset = this._json.dataset || defaultDataset;
 
         if (!this._json.isEntitySet) {
             this.initialize();
@@ -132,14 +132,7 @@ export class Job extends NamedInMemoryEntity {
         });
     }
 
-    // ─── Status ─────────────────────────────────────────────────────────────────
-
-    /**
-     * Returns the job status, defaulting to `pre_submission` if not set.
-     */
-    get status(): JobStatus {
-        return this.prop<JobStatus>("status") || JobStatus.pre_submission;
-    }
+    // ─── Status Helpers ─────────────────────────────────────────────────────────
 
     get statusCls(): string {
         const colors: Record<string, string> = {
@@ -149,14 +142,14 @@ export class Job extends NamedInMemoryEntity {
             [JobStatus.finished]: "success",
             [JobStatus.error]: "error",
         };
-        return colors[this.status] || "default";
+        return colors[this.status ?? ""] || "default";
     }
 
     /**
      * Returns true when the job has a terminal status (finished/error/terminated/timeout).
      */
     get isInFinalStatus(): boolean {
-        return JOB_FINAL_STATUS_LIST.includes(this.status);
+        return JOB_FINAL_STATUS_LIST.includes(this.status as JobStatus);
     }
 
     get isSubmitted(): boolean {
@@ -176,7 +169,7 @@ export class Job extends NamedInMemoryEntity {
     }
 
     get isInRunningStatus(): boolean {
-        return [JobStatus.active, JobStatus.submitted].includes(this.status);
+        return [JobStatus.active, JobStatus.submitted].includes(this.status as JobStatus);
     }
 
     // ─── Status Track ────────────────────────────────────────────────────────────
@@ -254,14 +247,6 @@ export class Job extends NamedInMemoryEntity {
         return this.prop<Material[]>("materials");
     }
 
-    get _material(): EntityReference | undefined {
-        return this.prop<EntityReference>("_material");
-    }
-
-    get _materials(): EntityReference[] | undefined {
-        return this.prop<EntityReference[]>("_materials");
-    }
-
     setMaterialsSet(materialsSet: EntityReference | undefined): void {
         this.setProp("_materialsSet", materialsSet || undefined);
     }
@@ -270,39 +255,25 @@ export class Job extends NamedInMemoryEntity {
         return this.prop<EntityReference>("_materialsSet");
     }
 
-    // ─── Dataset ────────────────────────────────────────────────────────────────
-
-    get dataset(): typeof defaultDataset {
-        return this.prop<typeof defaultDataset>("dataset", defaultDataset);
-    }
-
-    set dataset(value: typeof defaultDataset) {
-        this.setProp("dataset", value);
-    }
-
     // ─── Workflow ────────────────────────────────────────────────────────────────
 
-    get workflow(): WodeWorkflowType {
+    get workflowInstance(): WodeWorkflowType {
         if (!this._workflow) {
             throw new Error("Workflow not found");
         }
         return this._workflow;
     }
 
-    setWorkflow(workflow: WodeWorkflowType): void {
-        this._workflow = workflow;
-        this._json.workflow = this._workflow.toJSON() as unknown as JobWorkflowSchema;
+    setWorkflow(workflowInstance: WodeWorkflowType): void {
+        this._workflow = workflowInstance;
+        this._json.workflow = this._workflow.toJSON() as unknown as JobSchema["workflow"];
     }
 
     get usedApplicationNames(): string[] {
-        return this.workflow.usedApplicationNames;
+        return this.workflowInstance.usedApplicationNames;
     }
 
-    // ─── Project / Parent ────────────────────────────────────────────────────────
-
-    get _project(): EntityReference | undefined {
-        return this.prop<EntityReference>("_project");
-    }
+    // ─── Parent ─────────────────────────────────────────────────────────────────
 
     setParent(parentJob: Job): void {
         const reference = (
@@ -317,16 +288,12 @@ export class Job extends NamedInMemoryEntity {
         delete this._json.parent;
     }
 
-    get parent(): EntityReference | undefined {
-        return this.prop<EntityReference>("parent");
-    }
-
     // ─── Factory ─────────────────────────────────────────────────────────────────
 
     /**
      * Creates a new Job with sensible defaults for a given workflow and material.
      */
-    static createDefault(
+    static createFromWorkflow(
         workflow: WodeWorkflowType,
         material: Material | Material[],
         extraConfig: Partial<JobSchema> = {},
@@ -352,9 +319,13 @@ export class Job extends NamedInMemoryEntity {
     }
 }
 
-hasScopeTrackMixin(Job.prototype);
-inMemoryEntityInSetMixin(Job.prototype);
-inMemoryEntitySetMixin(Job.prototype);
+namedEntityMixin(Job.prototype);
+jobSchemaMixin(Job.prototype);
+taggableMixin(Job.prototype);
 computedEntityMixin(Job.prototype);
+defaultableEntityMixin(Job);
+hashedEntityMixin(Job.prototype);
+hasDescriptionMixin(Job.prototype);
 
+export { Job };
 export default Job;

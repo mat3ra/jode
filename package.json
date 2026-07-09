@@ -1,7 +1,7 @@
 {
     "name": "@mat3ra/jode",
     "version": "0.0.0",
-    "description": "JOb DEsign elements — non-visual Job class, enums, and utilities",
+    "description": "JOb Design Elements — Job class, enums, and utilities",
     "scripts": {
         "test": "mocha --recursive --bail --require ts-node/register 'tests/js/**/*.ts'",
         "test:coverage": "nyc --reporter=text --reporter=html --reporter=lcov mocha --recursive --bail 'tests/js/**/*.ts'",
