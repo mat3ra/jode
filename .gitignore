@@ -1,0 +1,7 @@
+node_modules/
+*.tgz
+.nyc_output/
+coverage/
+__pycache__/
+*.egg-info/
+.pytest_cache/
