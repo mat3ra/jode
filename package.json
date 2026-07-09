@@ -45,7 +45,7 @@
         "@mat3ra/standata": "2026.6.12-1",
         "@mat3ra/tsconfig": "^2024.6.3-0",
         "@mat3ra/utils": "2025.9.20-0",
-        "@mat3ra/wode": "2026.6.19-0",
+        "@mat3ra/wode": "2026.7.9-0",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.11.30",
         "chai": "^4.3.4",
@@ -53,9 +53,29 @@
         "moment": "^2.29.4",
         "swig": "^1.4.2",
         "ts-node": "^10.9.2",
-        "typescript": "^5.6.6"
+        "typescript": "^5.6.6",
+        "husky": "^7.0.4",
+        "lint-staged": "^12.1.2"
     },
     "engines": {
         "node": ">=20.0.0"
+    },
+    "lint-staged": {
+        "src/js/**/*.js": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ],
+        "src/js/**/*.ts": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ],
+        "tests/js/**/*.js": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ],
+        "tests/js/**/*.ts": [
+            "eslint --cache --fix",
+            "prettier --write"
+        ]
     }
 }
