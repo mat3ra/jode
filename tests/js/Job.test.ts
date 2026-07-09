@@ -9,6 +9,7 @@ import { renderJinjaTemplate, setJobNameBasedOnMaterials } from "../../src/js/ut
 
 const minimalWorkflowJson = {
     name: "Total Energy",
+    properties: [],
     subworkflows: [],
     units: [],
     workflows: [],
@@ -111,13 +112,13 @@ describe("Job", () => {
 
             job.setWorkflow(newWorkflow);
 
-            expect(job.workflow.name).to.equal("Band Gap");
+            expect(job.workflow?.name).to.equal("Band Gap");
         });
 
-        it("throws when accessing .workflow when no workflow is set", () => {
+        it("throws when accessing .workflowInstance when no workflow is set", () => {
             const job = new Job({ name: "No Workflow", status: JobStatus.pre_submission });
 
-            expect(() => job.workflow).to.throw("Workflow not found");
+            expect(() => job.workflowInstance).to.throw("Workflow not found");
         });
     });
 
@@ -139,7 +140,7 @@ describe("Job", () => {
             // Use a plain object with minimum interface as a material stand-in
             const mockMaterial = { _id: "mat-1", name: "Silicon" } as unknown as import("@mat3ra/made").Material;
 
-            const job = Job.createDefault(workflow, mockMaterial);
+            const job = Job.createFromWorkflow(workflow, mockMaterial);
 
             expect(job.status).to.equal(JobStatus.pre_submission);
             expect(job.dataset).to.deep.equal(defaultDataset);
@@ -190,7 +191,7 @@ describe("setJobNameBasedOnMaterials", () => {
     it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
         const WodeWorkflow = require("@mat3ra/wode/dist/js/Workflow").default;
         const workflow = new WodeWorkflow(minimalWorkflowJson);
-        const job = new Job({ name: "My Job", status: JobStatus.pre_submission, workflow: minimalWorkflowJson });
+        const job = new Job({ name: "My Job", status: JobStatus.pre_submission, workflow: minimalWorkflowJson } as JobSchema);
         job._workflow = workflow;
         const materials = [
             { _id: "1" } as unknown as import("@mat3ra/made").Material,
