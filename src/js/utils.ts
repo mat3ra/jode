@@ -1,6 +1,8 @@
 import type { NamedInMemoryEntity } from "@mat3ra/code/dist/js/entity";
 import type { Material } from "@mat3ra/made";
 // @ts-expect-error — swig does not have maintained TS types
+// Constraint: Swig is compiled on in-memory strings only. Do not use file-loading features
+// (like {% extends %}/{% include %}) in browser environments as fs polyfills are empty stubs.
 import jinja from "swig";
 
 import { SINGLE_JOB_SUFFIX } from "./enums";

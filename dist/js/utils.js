@@ -7,6 +7,8 @@ exports.renderJinjaTemplate = renderJinjaTemplate;
 exports.renderConfigsFromJobMaterialsWorkflows = renderConfigsFromJobMaterialsWorkflows;
 exports.setJobNameBasedOnMaterials = setJobNameBasedOnMaterials;
 // @ts-expect-error — swig does not have maintained TS types
+// Constraint: Swig is compiled on in-memory strings only. Do not use file-loading features
+// (like {% extends %}/{% include %}) in browser environments as fs polyfills are empty stubs.
 const swig_1 = __importDefault(require("swig"));
 const enums_1 = require("./enums");
 /**
