@@ -9,7 +9,8 @@
         "lint:fix": "eslint --fix --cache src/js tests/js && prettier --write src/js tests/js",
         "transpile": "tsc -p tsconfig-transpile.json",
         "prettier": "prettier --check src/js tests/js",
-        "prepare": "husky install || exit 0"
+        "prepare": "husky install || exit 0",
+        "prepublishOnly": "npm run transpile"
     },
     "repository": {
         "type": "git",
