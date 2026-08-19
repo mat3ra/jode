@@ -1,4 +1,4 @@
-import { type NamedInMemoryEntity, InMemoryEntity } from "@mat3ra/code/dist/js/entity";
+import { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
 import {
     type Defaultable,
     defaultableEntityMixin,
@@ -11,7 +11,10 @@ import {
     type HashedEntity,
     hashedEntityMixin,
 } from "@mat3ra/code/dist/js/entity/mixins/HashedEntityMixin";
-import { namedEntityMixin } from "@mat3ra/code/dist/js/entity/mixins/NamedEntityMixin";
+import {
+    type NamedEntity,
+    namedEntityMixin,
+} from "@mat3ra/code/dist/js/entity/mixins/NamedEntityMixin";
 import { Taggable, taggableMixin } from "@mat3ra/code/dist/js/entity/mixins/TaggableMixin";
 import type { AnyObject } from "@mat3ra/esse/dist/js/esse/types";
 import type {
@@ -49,7 +52,7 @@ export interface EntityReference {
 
 interface Job
     extends Defaultable,
-        NamedInMemoryEntity,
+        NamedEntity,
         JobSchemaMixin,
         Taggable,
         HashedEntity,
@@ -66,7 +69,7 @@ interface Job
  * standalone packages (jove, job-designer) as well as in the web-app,
  * where a host-level subclass may extend it with persistence and routing.
  */
-class Job extends InMemoryEntity {
+class Job extends InMemoryEntity<JobSchema> {
     declare _json: JobSchema & AnyObject;
 
     _workflow?: WodeWorkflowType;
@@ -142,7 +145,7 @@ class Job extends InMemoryEntity {
             [JobStatus.finished]: "success",
             [JobStatus.error]: "error",
         };
-        return colors[this.status ?? ""] || "default";
+        return colors[(this.status as string) ?? ""] || "default";
     }
 
     /**
@@ -175,7 +178,7 @@ class Job extends InMemoryEntity {
     // ─── Status Track ────────────────────────────────────────────────────────────
 
     get statusTrack(): Array<{ status: string; trackedAt: number }> {
-        return this.prop<Array<{ status: string; trackedAt: number }>>("statusTrack", []);
+        return this.prop("statusTrack", []) as Array<{ status: string; trackedAt: number }>;
     }
 
     /** Status track items in chronological order. */
@@ -240,11 +243,11 @@ class Job extends InMemoryEntity {
     }
 
     get material(): Material | undefined {
-        return this.prop<Material>("material");
+        return this.prop("material") as Material | undefined;
     }
 
     get materials(): Material[] | undefined {
-        return this.prop<Material[]>("materials");
+        return this.prop("materials") as Material[] | undefined;
     }
 
     setMaterialsSet(materialsSet: EntityReference | undefined): void {
@@ -252,7 +255,7 @@ class Job extends InMemoryEntity {
     }
 
     get materialsSet(): EntityReference | undefined {
-        return this.prop<EntityReference>("_materialsSet");
+        return this.prop("_materialsSet") as EntityReference | undefined;
     }
 
     // ─── Workflow ────────────────────────────────────────────────────────────────

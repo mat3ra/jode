@@ -112,7 +112,7 @@ describe("Job", () => {
 
             job.setWorkflow(newWorkflow);
 
-            expect(job.workflow?.name).to.equal("Band Gap");
+            expect((job.workflow as { name?: string } | undefined)?.name).to.equal("Band Gap");
         });
 
         it("throws when accessing .workflowInstance when no workflow is set", () => {
