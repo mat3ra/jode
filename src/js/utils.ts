@@ -1,5 +1,5 @@
 import type { NamedInMemoryEntity } from "@mat3ra/code/dist/js/entity";
-import type { Material } from "@mat3ra/made";
+import type { OrderedMaterial } from "@mat3ra/wode";
 // @ts-expect-error — swig does not have maintained TS types
 // Constraint: Swig is compiled on in-memory strings only. Do not use file-loading features
 // (like {% extends %}/{% include %}) in browser environments as fs polyfills are empty stubs.
@@ -32,7 +32,7 @@ export function renderConfigsFromJobMaterialsWorkflows({
     isMultiMaterial = false,
 }: {
     job: NamedJob;
-    materials: Material[];
+    materials: OrderedMaterial[];
     isMultiMaterial?: boolean;
     materialsSet?: object;
 }): ReturnType<Job["toJSON"]>[] {
@@ -50,18 +50,15 @@ export function renderConfigsFromJobMaterialsWorkflows({
         }
 
         job.render();
-        const { material: _material, materials: _materials, ...jobConfig } = job.toJSON();
-        configs.push(jobConfig);
+        configs.push(job.toJSON());
     } else {
         materials.forEach((material) => {
             job.setName(renderJinjaTemplate(originalName, { material }));
             job.setMaterial(material);
             job.render();
 
-            const jobConfig = { ...job.toJSON() };
-            delete jobConfig.materials;
+            const jobConfig = job.toJSON();
             delete jobConfig._materials;
-            delete jobConfig.material;
             configs.push(jobConfig);
         });
     }
@@ -73,7 +70,7 @@ export function renderConfigsFromJobMaterialsWorkflows({
  * Updates the job name to append or remove the per-material jinja suffix based on
  * whether the job is multi-material and how many materials are selected.
  */
-export function setJobNameBasedOnMaterials(job: NamedJob, materials: Material[]): void {
+export function setJobNameBasedOnMaterials(job: NamedJob, materials: OrderedMaterial[]): void {
     const { isMultiMaterial } = job.workflow as Record<string, unknown>;
     const hasMultipleMaterials = materials.length > 1;
 

@@ -1,208 +1,121 @@
 import type { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
-import type { ExtendedJobSchema } from "@mat3ra/esse/dist/js/types";
+import type { BaseInMemoryEntitySchema, JobSchema } from "@mat3ra/esse/dist/js/types";
 
-// Combined schema (esse's base JobSchema + ExtendedJobSchema), not esse's raw
-// JobSchema alone - some fields below (mode, isExternal, _materials, ...) only
-// exist on ExtendedJobSchema.
-import type { JobSchema } from "../Job";
+export type JobSchemaMixin = Omit<
+    JobSchema,
+    "_id" | "slug" | "systemName" | "schemaVersion" | "name" | "isDefault" | "metadata"
+>;
 
-/**
- * Combined partial schema type for the Job mixin. Fields that conflict with
- * InMemoryEntity / NamedInMemoryEntity (_id, slug, systemName, schemaVersion,
- * name, isDefault, metadata) are omitted — they are already provided by the
- * base class hierarchy.
- */
-type ConflictingKeys = "_id" | "slug" | "systemName" | "schemaVersion" | "name" | "isDefault" | "metadata";
+export type JobInMemoryEntity = InMemoryEntity<BaseInMemoryEntitySchema & JobSchemaMixin>;
 
-export type JobSchemaMixin = Omit<Partial<JobSchema>, ConflictingKeys> &
-    Partial<ExtendedJobSchema>;
-
-export type JobInMemoryEntity = InMemoryEntity<JobSchema> & JobSchemaMixin;
-
-export function jobSchemaMixin<T extends InMemoryEntity<JobSchema>>(
-    item: InMemoryEntity<JobSchema>,
+export function jobSchemaMixin<T extends InMemoryEntity>(
+    item: InMemoryEntity,
 ): asserts item is T & JobSchemaMixin {
-    Object.defineProperties(item, {
-        workflow: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("workflow");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["workflow"]) {
-                this.setProp("workflow", value);
-            },
-            configurable: true,
-            enumerable: true,
+    // @ts-expect-error
+    const properties: InMemoryEntity<JobSchemaMixin> & JobSchemaMixin = {
+        get workflow() {
+            return this.requiredProp("workflow");
         },
-        compute: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("compute");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["compute"]) {
-                this.setProp("compute", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set workflow(value: JobSchema["workflow"]) {
+            this.setProp("workflow", value);
         },
-        status: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("status");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["status"]) {
-                this.setProp("status", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get rmsId() {
+            return this.prop("rmsId");
         },
-        rmsId: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("rmsId");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["rmsId"]) {
-                this.setProp("rmsId", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set rmsId(value: JobSchema["rmsId"]) {
+            this.setProp("rmsId", value);
         },
-        startTime: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("startTime");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["startTime"]) {
-                this.setProp("startTime", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get status() {
+            return this.requiredProp("status");
         },
-        workDir: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("workDir");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["workDir"]) {
-                this.setProp("workDir", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set status(value: JobSchema["status"]) {
+            this.setProp("status", value);
         },
-        _project: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("_project");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["_project"]) {
-                this.setProp("_project", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get startTime() {
+            return this.prop("startTime");
         },
-        _material: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("_material");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["_material"]) {
-                this.setProp("_material", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set startTime(value: JobSchema["startTime"]) {
+            this.setProp("startTime", value);
         },
-        parent: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("parent");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["parent"]) {
-                this.setProp("parent", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get workDir() {
+            return this.prop("workDir");
         },
-        runtimeContext: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("runtimeContext");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["runtimeContext"]) {
-                this.setProp("runtimeContext", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set workDir(value: JobSchema["workDir"]) {
+            this.setProp("workDir", value);
         },
-        scopeTrack: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("scopeTrack");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: JobSchema["scopeTrack"]) {
-                this.setProp("scopeTrack", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get _project() {
+            return this.requiredProp("_project");
         },
-        // ExtendedJobSchema fields
-        mode: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("mode");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["mode"]) {
-                this.setProp("mode", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set _project(value: JobSchema["_project"]) {
+            this.setProp("_project", value);
         },
-        isExternal: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("isExternal");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["isExternal"]) {
-                this.setProp("isExternal", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get _material() {
+            return this.prop("_material");
         },
-        _materials: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("_materials");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["_materials"]) {
-                this.setProp("_materials", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set _material(value: JobSchema["_material"]) {
+            this.setProp("_material", value);
         },
-        _materialsSet: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("_materialsSet");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["_materialsSet"]) {
-                this.setProp("_materialsSet", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get _materials() {
+            return this.prop("_materials");
         },
-        purged: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("purged");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["purged"]) {
-                this.setProp("purged", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set _materials(value: JobSchema["_materials"]) {
+            this.setProp("_materials", value);
         },
-        purgedAt: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("purgedAt");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["purgedAt"]) {
-                this.setProp("purgedAt", value);
-            },
-            configurable: true,
-            enumerable: true,
+        get _materialsSet() {
+            return this.prop("_materialsSet");
         },
-        dataset: {
-            get(this: InMemoryEntity<JobSchema>) {
-                return this.prop("dataset");
-            },
-            set(this: InMemoryEntity<JobSchema>, value: ExtendedJobSchema["dataset"]) {
-                this.setProp("dataset", value);
-            },
-            configurable: true,
-            enumerable: true,
+        set _materialsSet(value: JobSchema["_materialsSet"]) {
+            this.setProp("_materialsSet", value);
         },
-    });
+        get parent() {
+            return this.prop("parent");
+        },
+        set parent(value: JobSchema["parent"]) {
+            this.setProp("parent", value);
+        },
+        get runtimeContext() {
+            return this.prop("runtimeContext");
+        },
+        set runtimeContext(value: JobSchema["runtimeContext"]) {
+            this.setProp("runtimeContext", value);
+        },
+        get scopeTrack() {
+            return this.prop("scopeTrack");
+        },
+        set scopeTrack(value: JobSchema["scopeTrack"]) {
+            this.setProp("scopeTrack", value);
+        },
+        get dataset() {
+            return this.prop("dataset");
+        },
+        set dataset(value: JobSchema["dataset"]) {
+            this.setProp("dataset", value);
+        },
+        get purged() {
+            return this.prop("purged");
+        },
+        set purged(value: JobSchema["purged"]) {
+            this.setProp("purged", value);
+        },
+        get purgedAt() {
+            return this.prop("purgedAt");
+        },
+        set purgedAt(value: JobSchema["purgedAt"]) {
+            this.setProp("purgedAt", value);
+        },
+        get compute() {
+            return this.requiredProp("compute");
+        },
+        set compute(value: JobSchema["compute"]) {
+            this.setProp("compute", value);
+        },
+        get statusTrack() {
+            return this.prop("statusTrack");
+        },
+        set statusTrack(value: JobSchema["statusTrack"]) {
+            this.setProp("statusTrack", value);
+        },
+    };
+
+    Object.defineProperties(item, Object.getOwnPropertyDescriptors(properties));
 }

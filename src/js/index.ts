@@ -8,6 +8,10 @@ export {
     SINGLE_JOB_SUFFIX,
     TAB_NAVIGATION_CONFIG,
 } from "./enums";
-export { Job, type EntityReference, type JobSchema } from "./Job";
+export { Job, type EntityReference, type JobEntity } from "./Job";
 export { type JobSchemaMixin } from "./generated/JobSchemaMixin";
-export { renderJinjaTemplate, renderConfigsFromJobMaterialsWorkflows, setJobNameBasedOnMaterials } from "./utils";
+export {
+    renderJinjaTemplate,
+    renderConfigsFromJobMaterialsWorkflows,
+    setJobNameBasedOnMaterials,
+} from "./utils";

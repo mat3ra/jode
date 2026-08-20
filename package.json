@@ -8,6 +8,7 @@
         "lint": "eslint src/js tests/js && prettier --write src/js tests/js",
         "lint:fix": "eslint --fix --cache src/js tests/js && prettier --write src/js tests/js",
         "transpile": "tsc -p tsconfig-transpile.json",
+        "generate-mixins": "ts-node scripts/generate-mixins.ts",
         "prettier": "prettier --check src/js tests/js",
         "prepare": "husky install || exit 0",
         "prepublishOnly": "npm run transpile"
@@ -41,8 +42,8 @@
     "devDependencies": {
         "@mat3ra/ade": "https://github.com/mat3ra/ade/releases/download/wip-27f6c05/ade.tgz",
         "@mat3ra/code": "2026.8.18-0",
-        "@mat3ra/esse": "2026.8.18-2",
-        "@mat3ra/ide": "2026.8.18-0",
+        "@mat3ra/esse": "https://github.com/mat3ra/esse/releases/download/wip-b348ef5/esse.tgz",
+        "@mat3ra/ide": "https://github.com/mat3ra/ide/releases/download/wip-a02d972/ide.tgz",
         "@mat3ra/made": "2026.8.18-0",
         "@mat3ra/mode": "https://github.com/mat3ra/mode/releases/download/wip-02b85be/mode.tgz",
         "@mat3ra/prode": "https://github.com/mat3ra/prode/releases/download/wip-52f33d4/prode.tgz",
@@ -50,6 +51,7 @@
         "@mat3ra/tsconfig": "^2024.6.3-0",
         "@mat3ra/utils": "https://github.com/mat3ra/utils/releases/download/wip-9a19d0d/utils.tgz",
         "@mat3ra/wode": "2026.8.18-0",
+        "@types/json-schema": "^7.0.15",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.11.30",
         "chai": "^4.3.4",

@@ -1,7 +1,13 @@
 import { expect } from "chai";
+import type { OrderedMaterial } from "@mat3ra/wode";
 
-import { Job, type JobSchema } from "../../src/js/Job";
-import { JOB_FINAL_STATUS_LIST, JobStatus, JOB_STATUS_CLS, SINGLE_JOB_SUFFIX } from "../../src/js/enums";
+import { Job, type JobEntity } from "../../src/js/Job";
+import {
+    JOB_FINAL_STATUS_LIST,
+    JobStatus,
+    JOB_STATUS_CLS,
+    SINGLE_JOB_SUFFIX,
+} from "../../src/js/enums";
 import { defaultDataset } from "../../src/js/dataset";
 import { renderJinjaTemplate, setJobNameBasedOnMaterials } from "../../src/js/utils";
 
@@ -15,7 +21,7 @@ const minimalWorkflowJson = {
     workflows: [],
 };
 
-function makeJobConfig(overrides: Partial<JobSchema> = {}): JobSchema {
+function makeJobConfig(overrides: Partial<JobEntity> = {}): JobEntity {
     return {
         name: "Test Job",
         status: JobStatus.pre_submission,
@@ -23,7 +29,7 @@ function makeJobConfig(overrides: Partial<JobSchema> = {}): JobSchema {
         workflow: minimalWorkflowJson,
         dataset: defaultDataset,
         ...overrides,
-    };
+    } as JobEntity;
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -79,7 +85,10 @@ describe("Job", () => {
         it("reports isInFinalStatus = true for all terminal statuses", () => {
             for (const terminalStatus of JOB_FINAL_STATUS_LIST) {
                 const job = new Job(makeJobConfig({ status: terminalStatus }));
-                expect(job.isInFinalStatus, `Expected ${terminalStatus} to be a final status`).to.equal(true);
+                expect(
+                    job.isInFinalStatus,
+                    `Expected ${terminalStatus} to be a final status`,
+                ).to.equal(true);
             }
         });
 
@@ -116,7 +125,10 @@ describe("Job", () => {
         });
 
         it("throws when accessing .workflowInstance when no workflow is set", () => {
-            const job = new Job({ name: "No Workflow", status: JobStatus.pre_submission });
+            const job = new Job({
+                name: "No Workflow",
+                status: JobStatus.pre_submission,
+            } as JobEntity);
 
             expect(() => job.workflowInstance).to.throw("Workflow not found");
         });
@@ -138,7 +150,11 @@ describe("Job", () => {
             const workflow = new WodeWorkflow(minimalWorkflowJson);
 
             // Use a plain object with minimum interface as a material stand-in
-            const mockMaterial = { _id: "mat-1", name: "Silicon" } as unknown as import("@mat3ra/made").Material;
+            const mockMaterial = {
+                _id: "mat-1",
+                name: "Silicon",
+                getAsEntityReference: () => ({ _id: "mat-1", cls: "Material" }),
+            } as unknown as OrderedMaterial;
 
             const job = Job.createFromWorkflow(workflow, mockMaterial);
 
@@ -191,11 +207,15 @@ describe("setJobNameBasedOnMaterials", () => {
     it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
         const WodeWorkflow = require("@mat3ra/wode/dist/js/Workflow").default;
         const workflow = new WodeWorkflow(minimalWorkflowJson);
-        const job = new Job({ name: "My Job", status: JobStatus.pre_submission, workflow: minimalWorkflowJson } as JobSchema);
+        const job = new Job({
+            name: "My Job",
+            status: JobStatus.pre_submission,
+            workflow: minimalWorkflowJson,
+        } as unknown as JobEntity);
         job._workflow = workflow;
         const materials = [
-            { _id: "1" } as unknown as import("@mat3ra/made").Material,
-            { _id: "2" } as unknown as import("@mat3ra/made").Material,
+            { _id: "1" } as unknown as OrderedMaterial,
+            { _id: "2" } as unknown as OrderedMaterial,
         ];
 
         setJobNameBasedOnMaterials(job, materials);

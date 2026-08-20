@@ -16,31 +16,14 @@ import {
     namedEntityMixin,
 } from "@mat3ra/code/dist/js/entity/mixins/NamedEntityMixin";
 import { Taggable, taggableMixin } from "@mat3ra/code/dist/js/entity/mixins/TaggableMixin";
-import type { AnyObject } from "@mat3ra/esse/dist/js/esse/types";
-import type {
-    JobSchema as EsseJobSchema,
-    ExtendedJobSchema,
-} from "@mat3ra/esse/dist/js/types";
+import type { JobSchema as EsseJobSchema } from "@mat3ra/esse/dist/js/types";
 import { ComputedEntityMixin, computedEntityMixin } from "@mat3ra/ide/dist/js/compute";
-import type { Material } from "@mat3ra/made";
-import type WodeWorkflowType from "@mat3ra/wode/dist/js/Workflow";
+import type { OrderedMaterial } from "@mat3ra/wode";
+import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
 
 import { defaultDataset } from "./dataset";
 import { JOB_FINAL_STATUS_LIST, JobStatus } from "./enums";
 import { type JobSchemaMixin, jobSchemaMixin } from "./generated/JobSchemaMixin";
-
-// Static import for ESM compatibility (Vite/browser). Vite handles CJS→ESM
-// interop for Workflow.js so the default export is the Workflow class.
-import WodeWorkflowDefault from "@mat3ra/wode/dist/js/Workflow";
-// Normalise: when bundled as CJS, __esModule interop may nest under .default.
-const WodeWorkflow = ((WodeWorkflowDefault as any).default ??
-    WodeWorkflowDefault) as typeof WodeWorkflowType;
-
-/**
- * Combined Job schema type from ESSE base + extended schemas.
- * Uses Partial because not all fields are present at construction time.
- */
-export type JobSchema = Partial<EsseJobSchema> & Partial<ExtendedJobSchema> & AnyObject;
 
 /**
  * A minimal entity reference — contains at least an `_id` to identify the entity.
@@ -50,17 +33,17 @@ export interface EntityReference {
     [key: string]: unknown;
 }
 
-interface Job
-    extends Defaultable,
+export type JobEntity = EsseJobSchema;
+
+interface Job<S extends JobEntity = JobEntity>
+    extends
+        Defaultable,
         NamedEntity,
         JobSchemaMixin,
         Taggable,
         HashedEntity,
-        ComputedEntityMixin,
-        HasDescription {
-    // TODO: fix ComputedEntityMixin and remove this
-    compute: EsseJobSchema["compute"];
-}
+        ComputedEntityMixin<EsseJobSchema["compute"]>,
+        HasDescription {}
 
 /**
  * Job — core non-visual model for a computational job.
@@ -69,47 +52,44 @@ interface Job
  * standalone packages (jove, job-designer) as well as in the web-app,
  * where a host-level subclass may extend it with persistence and routing.
  */
-class Job extends InMemoryEntity<JobSchema> {
-    declare _json: JobSchema & AnyObject;
+class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
+    _workflow?: WodeWorkflow;
 
-    _workflow?: WodeWorkflowType;
+    /** Live material instance(s) - not part of the esse schema, never in `_json`/`toJSON`. */
+    material?: OrderedMaterial;
 
-    constructor(config: JobSchema) {
-        super({ ...(config as AnyObject), _materialsSet: config._materialsSet || undefined });
+    materials?: OrderedMaterial[];
 
-        this._json.dataset = this._json.dataset || defaultDataset;
+    constructor(config: NoInfer<S>) {
+        super({ ...config, _materialsSet: config._materialsSet || undefined });
 
-        if (!this._json.isEntitySet) {
-            this.initialize();
-        }
+        this.dataset = this.dataset || defaultDataset;
+        this.initialize();
     }
 
     /**
      * Initializes derived state (workflow instance, material references) from raw JSON.
      */
     initialize(): void {
-        if (this._json.isEntitySet) return;
-
-        if (this._json.workflow) {
+        const workflow = this.prop("workflow");
+        if (workflow) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            this._workflow = new WodeWorkflow(this._json.workflow as any);
+            this._workflow = new WodeWorkflow(workflow as any);
         }
     }
 
-    setProps(json: AnyObject): this {
+    setProps(json: Partial<S>): this {
         super.setProps(json);
-
-        if (!this._json.isEntitySet) {
-            this.initialize();
-        }
+        this.initialize();
 
         return this;
     }
 
-    toJSON(): JobSchema & AnyObject {
+    toJSON(): S {
         return {
-            ...(super.toJSON() as AnyObject),
-            workflow: this._workflow?.toJSON(),
+            ...super.toJSON(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            workflow: this._workflow?.toJSON() as any,
         };
     }
 
@@ -117,7 +97,7 @@ class Job extends InMemoryEntity<JobSchema> {
      * Renders the workflow with the given material context.
      * Only valid when the job has a workflow and at least one material.
      */
-    render(): void {
+    render(scopeGlobal?: Record<string, unknown>): void {
         const material = this.material || this.materials?.[0];
         if (!material) {
             throw new Error("Job must have a material and materials");
@@ -125,13 +105,12 @@ class Job extends InMemoryEntity<JobSchema> {
         if (!this._workflow) {
             throw new Error("Workflow not found");
         }
-        // render() is typed against OrderedMaterial in wode; we cast to any for flexibility.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this._workflow as any).render({
+        this._workflow.render({
             material,
             materials: this.materials || [material],
             materialsSet: this.materialsSet,
             jobHasParent: Boolean(this.parent),
+            scopeGlobal,
         });
     }
 
@@ -145,7 +124,7 @@ class Job extends InMemoryEntity<JobSchema> {
             [JobStatus.finished]: "success",
             [JobStatus.error]: "error",
         };
-        return colors[(this.status as string) ?? ""] || "default";
+        return colors[this.status] || "default";
     }
 
     /**
@@ -176,39 +155,33 @@ class Job extends InMemoryEntity<JobSchema> {
     }
 
     // ─── Status Track ────────────────────────────────────────────────────────────
-
-    get statusTrack(): Array<{ status: string; trackedAt: number }> {
-        return this.prop("statusTrack", []) as Array<{ status: string; trackedAt: number }>;
-    }
+    // `statusTrack` itself is provided by the generated `jobSchemaMixin`.
 
     /** Status track items in chronological order. */
-    get statusTrackSorted(): Array<{ status: string; trackedAt: number }> {
-        return [...this.statusTrack].sort((a, b) => a.trackedAt - b.trackedAt);
+    get statusTrackSorted() {
+        return [...(this.statusTrack ?? [])].sort((a, b) => a.trackedAt - b.trackedAt);
     }
 
-    get submittedTimestamp(): { status: string; trackedAt: number } | undefined {
-        return this.statusTrack.find((s) => s.status === JobStatus.submitted);
+    get submittedTimestamp() {
+        return this.statusTrack?.find((s) => s.status === JobStatus.submitted);
     }
 
-    get activeTimestamp(): { status: string; trackedAt: number } | undefined {
-        return this.statusTrack.find((s) => s.status === JobStatus.active);
+    get activeTimestamp() {
+        return this.statusTrack?.find((s) => s.status === JobStatus.active);
     }
 
-    get finalTimestamp(): { status: string; trackedAt: number } | undefined {
-        return JOB_FINAL_STATUS_LIST.reduce(
-            (result: { status: string; trackedAt: number } | undefined, status) => {
-                if (result) return result;
-                return this.statusTrack.find((s) => s.status === status);
-            },
-            undefined,
-        );
+    get finalTimestamp() {
+        for (const status of JOB_FINAL_STATUS_LIST) {
+            const entry = this.statusTrack?.find((s) => s.status === status);
+            if (entry) return entry;
+        }
+        return undefined;
     }
 
     get hasBeenActiveMoreThanOnce(): boolean {
         return Boolean(
-            this.statusTrack
-                .map((o) => o.status)
-                .filter((s) => s === JobStatus.active).length > 1,
+            (this.statusTrack ?? []).map((o) => o.status).filter((s) => s === JobStatus.active)
+                .length > 1,
         );
     }
 
@@ -217,59 +190,40 @@ class Job extends InMemoryEntity<JobSchema> {
     /**
      * Sets the primary material for this job.
      */
-    setMaterial(material: Material): void {
-        this.setProp("material", material);
-        const reference = (
-            material as unknown as { getAsEntityReference?: () => EntityReference }
-        ).getAsEntityReference?.();
-        if (reference) {
-            this._json._material = reference;
-        }
+    setMaterial(material: OrderedMaterial): void {
+        this.material = material;
+        this._material = material.getAsEntityReference();
     }
 
     /**
      * Sets multiple materials for a multi-material job.
      */
-    setMaterials(materials: Material[] = []): void {
-        this.setProp("materials", materials);
-        const references = materials.map(
-            (m) =>
-                (
-                    m as unknown as { getAsEntityReference?: () => EntityReference }
-                ).getAsEntityReference?.() ??
-                ({ _id: (m as unknown as { _id?: string })._id ?? "" } as EntityReference),
-        );
-        this._json._materials = references;
-    }
-
-    get material(): Material | undefined {
-        return this.prop("material") as Material | undefined;
-    }
-
-    get materials(): Material[] | undefined {
-        return this.prop("materials") as Material[] | undefined;
+    setMaterials(materials: OrderedMaterial[] = []): void {
+        this.materials = materials;
+        this._materials = materials.map((m) => m.getAsEntityReference());
     }
 
     setMaterialsSet(materialsSet: EntityReference | undefined): void {
-        this.setProp("_materialsSet", materialsSet || undefined);
+        this._materialsSet = materialsSet || undefined;
     }
 
     get materialsSet(): EntityReference | undefined {
-        return this.prop("_materialsSet") as EntityReference | undefined;
+        return this.prop("_materialsSet");
     }
 
     // ─── Workflow ────────────────────────────────────────────────────────────────
 
-    get workflowInstance(): WodeWorkflowType {
+    get workflowInstance(): WodeWorkflow {
         if (!this._workflow) {
             throw new Error("Workflow not found");
         }
         return this._workflow;
     }
 
-    setWorkflow(workflowInstance: WodeWorkflowType): void {
+    setWorkflow(workflowInstance: WodeWorkflow): void {
         this._workflow = workflowInstance;
-        this._json.workflow = this._workflow.toJSON() as unknown as JobSchema["workflow"];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.workflow = this._workflow.toJSON() as any;
     }
 
     get usedApplicationNames(): string[] {
@@ -279,27 +233,24 @@ class Job extends InMemoryEntity<JobSchema> {
     // ─── Parent ─────────────────────────────────────────────────────────────────
 
     setParent(parentJob: Job): void {
-        const reference = (
-            parentJob as unknown as { getAsEntityReference?: () => EntityReference }
-        ).getAsEntityReference?.();
-        if (reference) {
-            this._json.parent = reference;
-        }
+        this.parent = parentJob.getAsEntityReference();
     }
 
     unsetParent(): void {
-        delete this._json.parent;
+        this.unsetProp("parent");
     }
 
     // ─── Factory ─────────────────────────────────────────────────────────────────
 
     /**
      * Creates a new Job with sensible defaults for a given workflow and material.
+     * `extraConfig` is expected to supply the remaining required fields (`_project`,
+     * `compute`) that this host-agnostic factory cannot default on its own.
      */
     static createFromWorkflow(
-        workflow: WodeWorkflowType,
-        material: Material | Material[],
-        extraConfig: Partial<JobSchema> = {},
+        workflow: WodeWorkflow,
+        material: OrderedMaterial | OrderedMaterial[],
+        extraConfig: Partial<JobEntity> = {},
     ): Job {
         const singleMaterial = Array.isArray(material) ? material[0] : material;
         const job = new Job({
@@ -310,7 +261,7 @@ class Job extends InMemoryEntity<JobSchema> {
             workflow: workflow._json as any,
             dataset: defaultDataset,
             ...extraConfig,
-        });
+        } as JobEntity);
 
         if (workflow.isMultiMaterial) {
             job.setMaterials(Array.isArray(material) ? material : [material]);
