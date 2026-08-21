@@ -58,7 +58,7 @@ interface Job
  * standalone packages (jove, job-designer) as well as in the web-app,
  * where a host-level subclass may extend it with persistence and routing.
  */
-class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
+class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements JobEntity {
     _workflow?: WodeWorkflow;
 
     /** Live material instance(s) - not part of the esse schema, never in `_json`/`toJSON`. */
@@ -74,13 +74,28 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
     }
 
     /**
+     * Raw workflow JSON. Hand-written (not part of the generated `jobSchemaMixin`) because the
+     * schema's own recursive `workflow.workflows` field resolves to a lossy `{}[]` - see
+     * `JobEntity`'s own doc comment. Fixed to wode's `WorkflowSchema` rather than generic over
+     * `S`, matching wode's own `Workflow.workflows` (also hand-written, also fixed).
+     */
+    get workflow() {
+        return this.requiredProp("workflow");
+    }
+
+    set workflow(value: WorkflowSchema) {
+        (this._json as JobEntity).workflow = value;
+    }
+
+    /**
      * Initializes derived state (workflow instance, material references) from raw JSON.
      */
     initialize(): void {
+        // Optional read (not `this.workflow`, which throws via requiredProp): a job may be
+        // constructed without a workflow yet (e.g. before it's assigned via setWorkflow).
         const workflow = this.prop("workflow");
         if (workflow) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            this._workflow = new WodeWorkflow(workflow as any);
+            this._workflow = new WodeWorkflow(workflow);
         }
     }
 
@@ -228,8 +243,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
 
     setWorkflow(workflowInstance: WodeWorkflow): void {
         this._workflow = workflowInstance;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.workflow = this._workflow.toJSON() as any;
+        this.workflow = this._workflow.toJSON();
     }
 
     get usedApplicationNames(): string[] {

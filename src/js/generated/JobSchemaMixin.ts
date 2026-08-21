@@ -3,7 +3,7 @@ import type { BaseInMemoryEntitySchema, JobSchema } from "@mat3ra/esse/dist/js/t
 
 export type JobSchemaMixin = Omit<
     JobSchema,
-    "_id" | "slug" | "systemName" | "schemaVersion" | "name" | "isDefault" | "metadata"
+    "_id" | "slug" | "systemName" | "schemaVersion" | "name" | "isDefault" | "metadata" | "workflow"
 >;
 
 export type JobInMemoryEntity = InMemoryEntity<BaseInMemoryEntitySchema & JobSchemaMixin>;
@@ -13,12 +13,6 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
 ): asserts item is T & JobSchemaMixin {
     // @ts-expect-error
     const properties: InMemoryEntity<JobSchemaMixin> & JobSchemaMixin = {
-        get workflow() {
-            return this.requiredProp("workflow");
-        },
-        set workflow(value: JobSchema["workflow"]) {
-            this.setProp("workflow", value);
-        },
         get rmsId() {
             return this.prop("rmsId");
         },

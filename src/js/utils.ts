@@ -71,7 +71,7 @@ export function renderConfigsFromJobMaterialsWorkflows({
  * whether the job is multi-material and how many materials are selected.
  */
 export function setJobNameBasedOnMaterials(job: NamedJob, materials: OrderedMaterial[]): void {
-    const { isMultiMaterial } = job.workflow as Record<string, unknown>;
+    const isMultiMaterial = Boolean(job._workflow?.isMultiMaterial);
     const hasMultipleMaterials = materials.length > 1;
 
     /**

@@ -15,8 +15,23 @@ import type { JSONSchema7 } from "json-schema";
  * Fields already provided by InMemoryEntity / NamedInMemoryEntity / DefaultableMixin
  * (via the `job` schema's `named_defaultable_has_metadata` composition) - skipped so
  * the generated mixin does not redeclare them.
+ *
+ * `workflow` is also skipped: the schema's own recursive `workflow.workflows` field (sub-workflows
+ * share the parent's schema) resolves to a bare `{ type: "object" }` with no properties, so the
+ * generated type would be `{}[]` - unusable. `Job.ts` hand-writes `workflow` against wode's real
+ * `WorkflowSchema` instead (same reason wode's own `Workflow.workflows` is hand-written rather
+ * than generated - see `workflow/base`'s `OUTPUT_PATHS` entry in wode's own generate-mixins.ts).
  */
-const SKIP_FIELDS = ["_id", "slug", "systemName", "schemaVersion", "name", "isDefault", "metadata"];
+const SKIP_FIELDS = [
+    "_id",
+    "slug",
+    "systemName",
+    "schemaVersion",
+    "name",
+    "isDefault",
+    "metadata",
+    "workflow",
+];
 
 /**
  * Output file paths for each schema
