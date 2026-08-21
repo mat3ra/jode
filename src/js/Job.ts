@@ -20,6 +20,7 @@ import type { JobSchema as EsseJobSchema } from "@mat3ra/esse/dist/js/types";
 import { ComputedEntityMixin, computedEntityMixin } from "@mat3ra/ide/dist/js/compute";
 import type { OrderedMaterial } from "@mat3ra/wode";
 import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
+import type { WorkflowSchema } from "@mat3ra/wode/dist/js/workflows/types";
 
 import { defaultDataset } from "./dataset";
 import { JOB_FINAL_STATUS_LIST, JobStatus } from "./enums";
@@ -33,7 +34,13 @@ export interface EntityReference {
     [key: string]: unknown;
 }
 
-export type JobEntity = EsseJobSchema;
+/**
+ * `workflow` is inlined by json-schema-to-typescript with a loose shape - the schema's own
+ * recursive `workflow.workflows` field (sub-workflows share the parent's schema) resolves to a
+ * bare `{ type: "object" }` with no properties, so the generated type is `{}[]`. wode's own
+ * `WorkflowSchema` expresses the real recursive structure, so it replaces the generated one here.
+ */
+export type JobEntity = Omit<EsseJobSchema, "workflow"> & { workflow: WorkflowSchema };
 
 interface Job
     extends Defaultable,
