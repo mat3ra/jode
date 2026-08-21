@@ -256,8 +256,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
             name: "New Job",
             status: JobStatus.pre_submission,
             statusTrack: [],
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            workflow: workflow._json as any,
+            workflow: workflow._json,
             dataset: defaultDataset,
             ...extraConfig,
         } as JobEntity);
