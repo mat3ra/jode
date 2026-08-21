@@ -88,8 +88,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
     toJSON(): S {
         return {
             ...super.toJSON(),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            workflow: this._workflow?.toJSON() as any,
+            workflow: this._workflow?.toJSON(),
         };
     }
 
