@@ -35,9 +35,8 @@ export interface EntityReference {
 
 export type JobEntity = EsseJobSchema;
 
-interface Job<S extends JobEntity = JobEntity>
-    extends
-        Defaultable,
+interface Job
+    extends Defaultable,
         NamedEntity,
         JobSchemaMixin,
         Taggable,
@@ -170,11 +169,12 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> {
     }
 
     get finalTimestamp() {
-        for (const status of JOB_FINAL_STATUS_LIST) {
-            const entry = this.statusTrack?.find((s) => s.status === status);
-            if (entry) return entry;
-        }
-        return undefined;
+        return JOB_FINAL_STATUS_LIST.reduce<
+            NonNullable<typeof this.statusTrack>[number] | undefined
+        >(
+            (result, status) => result ?? this.statusTrack?.find((s) => s.status === status),
+            undefined,
+        );
     }
 
     get hasBeenActiveMoreThanOnce(): boolean {

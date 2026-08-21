@@ -1,14 +1,15 @@
-import { expect } from "chai";
 import type { OrderedMaterial } from "@mat3ra/wode";
+import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
+import { expect } from "chai";
 
-import { Job, type JobEntity } from "../../src/js/Job";
+import { defaultDataset } from "../../src/js/dataset";
 import {
     JOB_FINAL_STATUS_LIST,
-    JobStatus,
     JOB_STATUS_CLS,
+    JobStatus,
     SINGLE_JOB_SUFFIX,
 } from "../../src/js/enums";
-import { defaultDataset } from "../../src/js/dataset";
+import { type JobEntity, Job } from "../../src/js/Job";
 import { renderJinjaTemplate, setJobNameBasedOnMaterials } from "../../src/js/utils";
 
 // ─── Minimal fixtures ────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ describe("Job", () => {
         it("initializes a WodeWorkflow instance from the workflow JSON", () => {
             const job = new Job(makeJobConfig());
 
+            // eslint-disable-next-line no-unused-expressions
             expect(job._workflow).to.exist;
             expect(job._workflow?.name).to.equal("Total Energy");
         });
@@ -83,13 +85,13 @@ describe("Job", () => {
         });
 
         it("reports isInFinalStatus = true for all terminal statuses", () => {
-            for (const terminalStatus of JOB_FINAL_STATUS_LIST) {
+            JOB_FINAL_STATUS_LIST.forEach((terminalStatus) => {
                 const job = new Job(makeJobConfig({ status: terminalStatus }));
                 expect(
                     job.isInFinalStatus,
                     `Expected ${terminalStatus} to be a final status`,
                 ).to.equal(true);
-            }
+            });
         });
 
         it("reports isInFinalStatus = false for active status", () => {
@@ -115,7 +117,6 @@ describe("Job", () => {
 
     describe("setWorkflow / workflow getter", () => {
         it("allows setting a new workflow and reading it back", () => {
-            const WodeWorkflow = require("@mat3ra/wode/dist/js/Workflow").default;
             const job = new Job(makeJobConfig());
             const newWorkflow = new WodeWorkflow({ ...minimalWorkflowJson, name: "Band Gap" });
 
@@ -146,7 +147,6 @@ describe("Job", () => {
 
     describe("createDefault", () => {
         it("creates a Job with pre_submission status", () => {
-            const WodeWorkflow = require("@mat3ra/wode/dist/js/Workflow").default;
             const workflow = new WodeWorkflow(minimalWorkflowJson);
 
             // Use a plain object with minimum interface as a material stand-in
@@ -205,7 +205,6 @@ describe("renderJinjaTemplate", () => {
 
 describe("setJobNameBasedOnMaterials", () => {
     it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
-        const WodeWorkflow = require("@mat3ra/wode/dist/js/Workflow").default;
         const workflow = new WodeWorkflow(minimalWorkflowJson);
         const job = new Job({
             name: "My Job",
