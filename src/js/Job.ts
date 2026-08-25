@@ -84,6 +84,9 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
     }
 
     set workflow(value: WorkflowSchema) {
+        // `setProp`'s signature (`value: S[typeof name]`) isn't call-site generic, so it widens
+        // to `S[keyof S]` here rather than narrowing to `S["workflow"]` - same gap wode's own
+        // `Workflow.workflows` setter works around the same way.
         (this._json as JobEntity).workflow = value;
     }
 
@@ -243,7 +246,10 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
 
     setWorkflow(workflowInstance: WodeWorkflow): void {
         this._workflow = workflowInstance;
-        this.workflow = this._workflow.toJSON();
+        // Write straight to `_json`, not `this.workflow = ...` - a host subclass (e.g. web-app's
+        // `CoreJob`) may shadow the `workflow` accessor to mean the live instance, which would
+        // route this assignment back through `setWorkflow` and corrupt `_workflow`.
+        (this._json as JobEntity).workflow = this._workflow.toJSON();
     }
 
     get usedApplicationNames(): string[] {
