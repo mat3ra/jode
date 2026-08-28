@@ -1,6 +1,8 @@
 import type { OrderedMaterial } from "@mat3ra/wode";
 import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
 import { expect } from "chai";
+// @ts-expect-error — swig does not have maintained TS types
+import jinja from "swig";
 
 import { defaultDataset } from "../../src/js/dataset";
 import {
@@ -200,6 +202,56 @@ describe("renderJinjaTemplate", () => {
         const result = renderJinjaTemplate("Hello world");
 
         expect(result).to.equal("Hello world");
+    });
+
+    /**
+     * Regression: swig's `compile` ends with `utils.extend(compiled, pre.tokens)` (swig.js:622),
+     * assigning a `name` key onto the compiled function. `Function.prototype.name` is not
+     * writable, so under strict mode that throws for ANY template - even one with no
+     * interpolation. It is invisible here because Node loads swig as CommonJS (sloppy mode
+     * silently drops the assignment), but every ESM bundle is strict, so Vite pre-bundling this
+     * package for job-designer's standalone app crashed on every job save.
+     *
+     * Rather than assert the unreproducible-in-Node crash, this pins the fix: rendering must not
+     * route through `compile` at all.
+     */
+    it("does not route through swig's compile", () => {
+        const originalCompile = jinja.compile;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (jinja as any).compile = () => {
+            throw new Error("renderJinjaTemplate must not use swig.compile");
+        };
+
+        try {
+            expect(
+                renderJinjaTemplate("Hello {{ material.formula }}", {
+                    material: { formula: "Si" },
+                }),
+            ).to.equal("Hello Si");
+            // A plain string is the case that crashed in the browser - it still compiles a
+            // template internally, so it must be covered too.
+            expect(renderJinjaTemplate("Saved Test Job")).to.equal("Saved Test Job");
+        } finally {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (jinja as any).compile = originalCompile;
+        }
+    });
+
+    it("preserves swig template features beyond plain interpolation", () => {
+        expect(renderJinjaTemplate("{{ name|upper }}", { name: "si" })).to.equal("SI");
+        expect(
+            renderJinjaTemplate("{% for m in materials %}{{ m.formula }},{% endfor %}", {
+                materials: [{ formula: "Si" }, { formula: "Ge" }],
+            }),
+        ).to.equal("Si,Ge,");
+        expect(
+            renderJinjaTemplate(
+                "{% if material %}{{ material.formula }}{% else %}none{% endif %}",
+                {
+                    material: { formula: "C" },
+                },
+            ),
+        ).to.equal("C");
     });
 });
 
