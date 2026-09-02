@@ -39,26 +39,30 @@
         "@mat3ra/wode": "*"
     },
     "devDependencies": {
-        "@mat3ra/ade": "https://github.com/mat3ra/ade/releases/download/wip-27f6c05/ade.tgz",
+        "@exabyte-io/eslint-config": "^2025.1.15-0",
+        "@mat3ra/ade": "2026.8.18-0",
         "@mat3ra/code": "2026.8.18-0",
         "@mat3ra/esse": "2026.8.18-2",
         "@mat3ra/ide": "2026.8.18-0",
         "@mat3ra/made": "2026.8.18-0",
-        "@mat3ra/mode": "https://github.com/mat3ra/mode/releases/download/wip-02b85be/mode.tgz",
-        "@mat3ra/prode": "https://github.com/mat3ra/prode/releases/download/wip-52f33d4/prode.tgz",
-        "@mat3ra/standata": "https://github.com/mat3ra/standata/releases/download/wip-35eaef7/standata.tgz",
+        "@mat3ra/mode": "2026.8.18-0",
+        "@mat3ra/prode": "2026.8.18-0",
+        "@mat3ra/standata": "2026.8.27-0",
         "@mat3ra/tsconfig": "^2024.6.3-0",
-        "@mat3ra/utils": "https://github.com/mat3ra/utils/releases/download/wip-9a19d0d/utils.tgz",
+        "@mat3ra/utils": "2026.8.18-1",
         "@mat3ra/wode": "2026.8.18-0",
         "@types/mocha": "^10.0.1",
         "@types/node": "^20.11.30",
         "chai": "^4.3.4",
+        "eslint": "^7.32.0",
+        "eslint-plugin-prettier": "^4.2.5",
+        "husky": "^7.0.4",
+        "lint-staged": "^12.1.2",
         "mocha": "^9.1.3",
         "moment": "^2.29.4",
+        "prettier": "^2.5.1",
         "ts-node": "^10.9.2",
-        "typescript": "^5.6.6",
-        "husky": "^7.0.4",
-        "lint-staged": "^12.1.2"
+        "typescript": "^5.6.6"
     },
     "engines": {
         "node": ">=20.0.0"
