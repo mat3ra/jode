@@ -11,7 +11,8 @@ export {
 export { Job, type EntityReference, type JobSchema } from "./Job";
 export { type JobSchemaMixin } from "./generated/JobSchemaMixin";
 export {
-    getJupyterEndpointUrls,
+    getJupyterEndpointUrlsByUnitFlowchartId,
+    JUPYTER_NOTEBOOK_ENDPOINT,
     type JupyterEndpointProperty,
     type JupyterEndpointUrls,
 } from "./jupyter";
