@@ -37,12 +37,6 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
         set workDir(value: JobSchema["workDir"]) {
             this.setProp("workDir", value);
         },
-        get _project() {
-            return this.requiredProp("_project");
-        },
-        set _project(value: JobSchema["_project"]) {
-            this.setProp("_project", value);
-        },
         get _material() {
             return this.prop("_material");
         },
@@ -108,6 +102,12 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
         },
         set statusTrack(value: JobSchema["statusTrack"]) {
             this.setProp("statusTrack", value);
+        },
+        get _project() {
+            return this.requiredProp("_project");
+        },
+        set _project(value: JobSchema["_project"]) {
+            this.setProp("_project", value);
         },
     };
 
