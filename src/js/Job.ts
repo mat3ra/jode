@@ -24,6 +24,10 @@ import type { WorkflowSchema } from "@mat3ra/wode/dist/js/workflows/types";
 
 import { defaultDataset } from "./dataset";
 import { JOB_FINAL_STATUS_LIST, JobStatus } from "./enums";
+import {
+    type HasProjectSchemaMixin,
+    hasProjectSchemaMixin,
+} from "./generated/HasProjectSchemaMixin";
 import { type JobSchemaMixin, jobSchemaMixin } from "./generated/JobSchemaMixin";
 
 /**
@@ -46,6 +50,7 @@ interface Job
     extends Defaultable,
         NamedEntity,
         JobSchemaMixin,
+        HasProjectSchemaMixin,
         Taggable,
         HashedEntity,
         ComputedEntityMixin<EsseJobSchema["compute"]>,
@@ -300,6 +305,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
 
 namedEntityMixin(Job.prototype);
 jobSchemaMixin(Job.prototype);
+hasProjectSchemaMixin(Job.prototype);
 taggableMixin(Job.prototype);
 computedEntityMixin(Job.prototype);
 defaultableEntityMixin(Job);
