@@ -1,17 +1,14 @@
 import { expect } from "chai";
 
-import {
-    type JupyterEndpointProperty,
-    getJupyterEndpointUrlsByUnitFlowchartId,
-    JUPYTER_NOTEBOOK_ENDPOINT,
-} from "../../src/js/jupyter";
+import { getExtraTabsByUnitFlowchartId, JUPYTER_NOTEBOOK_ENDPOINT } from "../../src/js/jupyter";
+import type { JobPropertyRow } from "../../src/js/properties";
 
 function makeEndpointProperty(
     jobId: string,
     unitId: string,
     token: string,
     repetition = 0,
-): JupyterEndpointProperty {
+): JobPropertyRow {
     return {
         source: { type: "exabyte", info: { jobId, unitId } },
         repetition,
@@ -24,26 +21,32 @@ function makeEndpointProperty(
     };
 }
 
-describe("getJupyterEndpointUrlsByUnitFlowchartId", () => {
-    it("builds notebook and lab URLs per unit", () => {
+/** The mirror of makeEndpointProperty: what that row is expected to produce. */
+function expectedTabs(jobId: string, unitId: string, token: string) {
+    return [
+        {
+            id: "notebook",
+            itemName: "Notebook",
+            href: `/jupyter/${jobId}/${unitId}/tree/?token=${token}`,
+        },
+        {
+            id: "lab",
+            itemName: "Lab",
+            href: `/jupyter/${jobId}/${unitId}/lab/?token=${token}`,
+        },
+    ];
+}
+
+describe("getExtraTabsByUnitFlowchartId", () => {
+    it("builds notebook and lab tabs per unit", () => {
         const properties = [
             makeEndpointProperty("job1", "unit1", "tok123"),
             makeEndpointProperty("job1", "unit2", "tok456"),
         ];
 
-        expect(getJupyterEndpointUrlsByUnitFlowchartId("job1", properties)).to.deep.equal({
-            unit1: {
-                0: {
-                    notebookUrl: "/jupyter/job1/unit1/tree/?token=tok123",
-                    labUrl: "/jupyter/job1/unit1/lab/?token=tok123",
-                },
-            },
-            unit2: {
-                0: {
-                    notebookUrl: "/jupyter/job1/unit2/tree/?token=tok456",
-                    labUrl: "/jupyter/job1/unit2/lab/?token=tok456",
-                },
-            },
+        expect(getExtraTabsByUnitFlowchartId("job1", properties)).to.deep.equal({
+            unit1: { 0: expectedTabs("job1", "unit1", "tok123") },
+            unit2: { 0: expectedTabs("job1", "unit2", "tok456") },
         });
     });
 
@@ -53,10 +56,10 @@ describe("getJupyterEndpointUrlsByUnitFlowchartId", () => {
             makeEndpointProperty("job1", "unit1", "tok-rep1", 1),
         ];
 
-        const urls = getJupyterEndpointUrlsByUnitFlowchartId("job1", properties);
+        const tabs = getExtraTabsByUnitFlowchartId("job1", properties);
 
-        expect(urls.unit1[0].notebookUrl).to.contain("tok-rep0");
-        expect(urls.unit1[1].notebookUrl).to.contain("tok-rep1");
+        expect(tabs.unit1[0]).to.deep.equal(expectedTabs("job1", "unit1", "tok-rep0"));
+        expect(tabs.unit1[1]).to.deep.equal(expectedTabs("job1", "unit1", "tok-rep1"));
     });
 
     it("ignores properties belonging to another job", () => {
@@ -65,13 +68,12 @@ describe("getJupyterEndpointUrlsByUnitFlowchartId", () => {
             makeEndpointProperty("job1", "unit1", "tok123"),
         ];
 
-        expect(getJupyterEndpointUrlsByUnitFlowchartId("job1", properties).unit1[0]).to.deep.equal({
-            notebookUrl: "/jupyter/job1/unit1/tree/?token=tok123",
-            labUrl: "/jupyter/job1/unit1/lab/?token=tok123",
-        });
-        expect(
-            getJupyterEndpointUrlsByUnitFlowchartId("job2", properties).unit1[0].notebookUrl,
-        ).to.contain("wrong");
+        expect(getExtraTabsByUnitFlowchartId("job1", properties).unit1[0]).to.deep.equal(
+            expectedTabs("job1", "unit1", "tok123"),
+        );
+        expect(getExtraTabsByUnitFlowchartId("job2", properties).unit1[0]).to.deep.equal(
+            expectedTabs("job2", "unit1", "wrong"),
+        );
     });
 
     it("ignores properties of other names and rows without a token", () => {
@@ -79,17 +81,15 @@ describe("getJupyterEndpointUrlsByUnitFlowchartId", () => {
             source: { type: "exabyte", info: { jobId: "job1", unitId: "unit1" } },
             repetition: 0,
             data: { name: "band_gaps" as const, values: [] },
-        } as unknown as JupyterEndpointProperty;
+        } as unknown as JobPropertyRow;
         const tokenless = makeEndpointProperty("job1", "unit2", "");
 
-        expect(
-            getJupyterEndpointUrlsByUnitFlowchartId("job1", [otherProperty, tokenless]),
-        ).to.deep.equal({});
+        expect(getExtraTabsByUnitFlowchartId("job1", [otherProperty, tokenless])).to.deep.equal({});
     });
 
     it("returns an empty map for missing or empty properties", () => {
-        expect(getJupyterEndpointUrlsByUnitFlowchartId("job1", undefined)).to.deep.equal({});
-        expect(getJupyterEndpointUrlsByUnitFlowchartId("job1", null)).to.deep.equal({});
-        expect(getJupyterEndpointUrlsByUnitFlowchartId("job1", [])).to.deep.equal({});
+        expect(getExtraTabsByUnitFlowchartId("job1", undefined)).to.deep.equal({});
+        expect(getExtraTabsByUnitFlowchartId("job1", null)).to.deep.equal({});
+        expect(getExtraTabsByUnitFlowchartId("job1", [])).to.deep.equal({});
     });
 });
