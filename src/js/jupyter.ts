@@ -9,40 +9,22 @@ type JupyterEndpointData = Extract<
 
 export const JUPYTER_NOTEBOOK_ENDPOINT: JupyterEndpointData["name"] = "jupyter_notebook_endpoint";
 
-/**
- * An endpoint a unit serves while it runs: what it is called and where it lives. Deliberately
- * stated in job-domain terms — how it gets presented (a tab, a link, a button) is the viewer's
- * decision, not this package's.
- */
+/** An endpoint a unit serves while it runs. `url` is relative to the platform origin. */
 export type UnitEndpoint = {
-    /** Stable identifier, unique within a unit. */
     id: string;
-    /** Human-readable name of the endpoint. */
     label: string;
-    /** Where it lives, relative to the platform origin. */
     url: string;
 };
 
 /**
- * Builds the extra tabs every unit in a job publishes, keyed by unit flowchart id
- * (`source.info.unitId` — the same identifier) and then by repetition: a unit inside a map
- * subworkflow runs once per branch and publishes its own endpoint, with its own token, per
- * repetition.
+ * Endpoints served by each unit of a job, keyed by unit flowchart id then by repetition — a unit
+ * in a map subworkflow runs once per branch and serves its own endpoint per repetition.
  *
- * Jupyter endpoints are the only source today. The unit's own property is what identifies it —
- * a row named `jupyter_notebook_endpoint` exists only for a Jupyter unit — so no consumer needs
- * to inspect `executable.name`, and nothing downstream of here names an application.
- *
- * `jobProperties` is expected to be already scoped to `jobId`; the jobId comparison is a
- * belt-and-braces check. Token presence is checked because these rows are database documents,
- * not type-checked values, and a missing token would otherwise build a dead link.
- *
- * The `/jupyter/<jobId>/<unitId>/` prefix is a contract shared by two other repositories, and
- * moving it here alone breaks them: rupy serves the notebook on exactly this path
- * (`c.NotebookApp.base_url` in `src/software/scripting/jupyter_lab/unit.py`) and the web-app proxy
- * reads jobId and unitId back out of it by position (`imports/proxy/server/jupyterProxy.js`).
- * The trailing slash on `tree/` deviates from what Jupyter itself advertises and is deliberate —
- * verified against jupyterLab 3.0.3, 4.3.0 and 4.6.0.
+ * The `/jupyter/<jobId>/<unitId>/` prefix is a contract shared with two other repositories:
+ * rupy serves the notebook on exactly this path (`c.NotebookApp.base_url` in
+ * `src/software/scripting/jupyter_lab/unit.py`) and the web-app proxy reads jobId and unitId back
+ * out of it by position (`imports/proxy/server/jupyterProxy.js`). The trailing slash on `tree/`
+ * is deliberate — verified against jupyterLab 4.3.0 and 4.6.0.
  */
 export function getUnitEndpointsByFlowchartId(
     jobId: string,
