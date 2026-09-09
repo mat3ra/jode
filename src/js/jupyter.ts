@@ -10,16 +10,17 @@ type JupyterEndpointData = Extract<
 export const JUPYTER_NOTEBOOK_ENDPOINT: JupyterEndpointData["name"] = "jupyter_notebook_endpoint";
 
 /**
- * An endpoint a unit publishes while it runs, in the form its consumer needs: a label and where
- * it goes. What it looks like is not decided here.
+ * An endpoint a unit serves while it runs: what it is called and where it lives. Deliberately
+ * stated in job-domain terms — how it gets presented (a tab, a link, a button) is the viewer's
+ * decision, not this package's.
  */
-export type ExtraTab = {
+export type UnitEndpoint = {
     /** Stable identifier, unique within a unit. */
     id: string;
-    /** Label shown on the tab. */
-    itemName: string;
-    /** Destination, relative to the platform origin. */
-    href: string;
+    /** Human-readable name of the endpoint. */
+    label: string;
+    /** Where it lives, relative to the platform origin. */
+    url: string;
 };
 
 /**
@@ -43,11 +44,11 @@ export type ExtraTab = {
  * The trailing slash on `tree/` deviates from what Jupyter itself advertises and is deliberate —
  * verified against jupyterLab 3.0.3, 4.3.0 and 4.6.0.
  */
-export function getExtraTabsByUnitFlowchartId(
+export function getUnitEndpointsByFlowchartId(
     jobId: string,
     jobProperties: readonly JobPropertyRow[] | null | undefined,
-): Record<string, Record<number, ExtraTab[]>> {
-    const tabsByUnitFlowchartId: Record<string, Record<number, ExtraTab[]>> = {};
+): Record<string, Record<number, UnitEndpoint[]>> {
+    const endpointsByUnitFlowchartId: Record<string, Record<number, UnitEndpoint[]>> = {};
 
     jobProperties?.forEach((property) => {
         if (property.data.name !== JUPYTER_NOTEBOOK_ENDPOINT) return;
@@ -58,23 +59,23 @@ export function getExtraTabsByUnitFlowchartId(
         const { token } = property.data;
         if (!token) return;
 
-        const tabsByRepetition = tabsByUnitFlowchartId[unitId] ?? {};
-        if (tabsByRepetition[repetition]) return;
+        const endpointsByRepetition = endpointsByUnitFlowchartId[unitId] ?? {};
+        if (endpointsByRepetition[repetition]) return;
 
-        tabsByRepetition[repetition] = [
+        endpointsByRepetition[repetition] = [
             {
                 id: "notebook",
-                itemName: "Notebook",
-                href: `/jupyter/${jobId}/${unitId}/tree/?token=${token}`,
+                label: "Notebook",
+                url: `/jupyter/${jobId}/${unitId}/tree/?token=${token}`,
             },
             {
                 id: "lab",
-                itemName: "Lab",
-                href: `/jupyter/${jobId}/${unitId}/lab/?token=${token}`,
+                label: "Lab",
+                url: `/jupyter/${jobId}/${unitId}/lab/?token=${token}`,
             },
         ];
-        tabsByUnitFlowchartId[unitId] = tabsByRepetition;
+        endpointsByUnitFlowchartId[unitId] = endpointsByRepetition;
     });
 
-    return tabsByUnitFlowchartId;
+    return endpointsByUnitFlowchartId;
 }

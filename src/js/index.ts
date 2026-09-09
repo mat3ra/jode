@@ -10,7 +10,11 @@ export {
 } from "./enums";
 export { Job, type EntityReference, type JobSchema } from "./Job";
 export { type JobSchemaMixin } from "./generated/JobSchemaMixin";
-export { getExtraTabsByUnitFlowchartId, JUPYTER_NOTEBOOK_ENDPOINT, type ExtraTab } from "./jupyter";
+export {
+    getUnitEndpointsByFlowchartId,
+    JUPYTER_NOTEBOOK_ENDPOINT,
+    type UnitEndpoint,
+} from "./jupyter";
 export { type JobPropertyRow } from "./properties";
 export {
     renderJinjaTemplate,

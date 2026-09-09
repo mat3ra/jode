@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { getExtraTabsByUnitFlowchartId, JUPYTER_NOTEBOOK_ENDPOINT } from "../../src/js/jupyter";
+import { getUnitEndpointsByFlowchartId, JUPYTER_NOTEBOOK_ENDPOINT } from "../../src/js/jupyter";
 import type { JobPropertyRow } from "../../src/js/properties";
 
 function makeEndpointProperty(
@@ -22,31 +22,31 @@ function makeEndpointProperty(
 }
 
 /** The mirror of makeEndpointProperty: what that row is expected to produce. */
-function expectedTabs(jobId: string, unitId: string, token: string) {
+function expectedEndpoints(jobId: string, unitId: string, token: string) {
     return [
         {
             id: "notebook",
-            itemName: "Notebook",
-            href: `/jupyter/${jobId}/${unitId}/tree/?token=${token}`,
+            label: "Notebook",
+            url: `/jupyter/${jobId}/${unitId}/tree/?token=${token}`,
         },
         {
             id: "lab",
-            itemName: "Lab",
-            href: `/jupyter/${jobId}/${unitId}/lab/?token=${token}`,
+            label: "Lab",
+            url: `/jupyter/${jobId}/${unitId}/lab/?token=${token}`,
         },
     ];
 }
 
-describe("getExtraTabsByUnitFlowchartId", () => {
-    it("builds notebook and lab tabs per unit", () => {
+describe("getUnitEndpointsByFlowchartId", () => {
+    it("builds notebook and lab endpoints per unit", () => {
         const properties = [
             makeEndpointProperty("job1", "unit1", "tok123"),
             makeEndpointProperty("job1", "unit2", "tok456"),
         ];
 
-        expect(getExtraTabsByUnitFlowchartId("job1", properties)).to.deep.equal({
-            unit1: { 0: expectedTabs("job1", "unit1", "tok123") },
-            unit2: { 0: expectedTabs("job1", "unit2", "tok456") },
+        expect(getUnitEndpointsByFlowchartId("job1", properties)).to.deep.equal({
+            unit1: { 0: expectedEndpoints("job1", "unit1", "tok123") },
+            unit2: { 0: expectedEndpoints("job1", "unit2", "tok456") },
         });
     });
 
@@ -56,10 +56,10 @@ describe("getExtraTabsByUnitFlowchartId", () => {
             makeEndpointProperty("job1", "unit1", "tok-rep1", 1),
         ];
 
-        const tabs = getExtraTabsByUnitFlowchartId("job1", properties);
+        const endpoints = getUnitEndpointsByFlowchartId("job1", properties);
 
-        expect(tabs.unit1[0]).to.deep.equal(expectedTabs("job1", "unit1", "tok-rep0"));
-        expect(tabs.unit1[1]).to.deep.equal(expectedTabs("job1", "unit1", "tok-rep1"));
+        expect(endpoints.unit1[0]).to.deep.equal(expectedEndpoints("job1", "unit1", "tok-rep0"));
+        expect(endpoints.unit1[1]).to.deep.equal(expectedEndpoints("job1", "unit1", "tok-rep1"));
     });
 
     it("ignores properties belonging to another job", () => {
@@ -68,11 +68,11 @@ describe("getExtraTabsByUnitFlowchartId", () => {
             makeEndpointProperty("job1", "unit1", "tok123"),
         ];
 
-        expect(getExtraTabsByUnitFlowchartId("job1", properties).unit1[0]).to.deep.equal(
-            expectedTabs("job1", "unit1", "tok123"),
+        expect(getUnitEndpointsByFlowchartId("job1", properties).unit1[0]).to.deep.equal(
+            expectedEndpoints("job1", "unit1", "tok123"),
         );
-        expect(getExtraTabsByUnitFlowchartId("job2", properties).unit1[0]).to.deep.equal(
-            expectedTabs("job2", "unit1", "wrong"),
+        expect(getUnitEndpointsByFlowchartId("job2", properties).unit1[0]).to.deep.equal(
+            expectedEndpoints("job2", "unit1", "wrong"),
         );
     });
 
@@ -84,12 +84,12 @@ describe("getExtraTabsByUnitFlowchartId", () => {
         } as unknown as JobPropertyRow;
         const tokenless = makeEndpointProperty("job1", "unit2", "");
 
-        expect(getExtraTabsByUnitFlowchartId("job1", [otherProperty, tokenless])).to.deep.equal({});
+        expect(getUnitEndpointsByFlowchartId("job1", [otherProperty, tokenless])).to.deep.equal({});
     });
 
     it("returns an empty map for missing or empty properties", () => {
-        expect(getExtraTabsByUnitFlowchartId("job1", undefined)).to.deep.equal({});
-        expect(getExtraTabsByUnitFlowchartId("job1", null)).to.deep.equal({});
-        expect(getExtraTabsByUnitFlowchartId("job1", [])).to.deep.equal({});
+        expect(getUnitEndpointsByFlowchartId("job1", undefined)).to.deep.equal({});
+        expect(getUnitEndpointsByFlowchartId("job1", null)).to.deep.equal({});
+        expect(getUnitEndpointsByFlowchartId("job1", [])).to.deep.equal({});
     });
 });
