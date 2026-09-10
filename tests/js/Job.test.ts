@@ -10,7 +10,11 @@ import {
     SINGLE_JOB_SUFFIX,
 } from "../../src/js/enums";
 import { type JobEntity, Job } from "../../src/js/Job";
-import { renderJinjaTemplate, setJobNameBasedOnMaterials } from "../../src/js/utils";
+import {
+    renderConfigsFromJobMaterialsWorkflows,
+    renderJinjaTemplate,
+    setJobNameBasedOnMaterials,
+} from "../../src/js/utils";
 
 // ─── Minimal fixtures ────────────────────────────────────────────────────────
 
@@ -184,6 +188,45 @@ describe("Job", () => {
 
             expect(job.submittedTimestamp?.status).to.equal("submitted");
         });
+    });
+});
+
+function makeMaterial(formula: string): OrderedMaterial {
+    return {
+        formula,
+        getAsEntityReference: () => ({ _id: formula }),
+    } as unknown as OrderedMaterial;
+}
+
+describe("renderConfigsFromJobMaterialsWorkflows", () => {
+    it("passes scopeGlobal through to job.render for each material", () => {
+        const job = new Job(makeJobConfig());
+        const renderCalls: (Record<string, unknown> | undefined)[] = [];
+        const originalRender = job.render.bind(job);
+
+        job.render = (scopeGlobal?: Record<string, unknown>) => {
+            renderCalls.push(scopeGlobal);
+            return originalRender(scopeGlobal);
+        };
+
+        const scopeGlobal = { foo: "bar" };
+
+        renderConfigsFromJobMaterialsWorkflows({
+            job,
+            materials: [makeMaterial("Si")],
+            scopeGlobal,
+        });
+
+        expect(renderCalls).to.deep.equal([scopeGlobal]);
+    });
+
+    it("renders one config per material when not multi-material", () => {
+        const job = new Job(makeJobConfig({ name: "{{ material.formula }}" }));
+        const materials = [makeMaterial("Si"), makeMaterial("Ge")];
+
+        const configs = renderConfigsFromJobMaterialsWorkflows({ job, materials });
+
+        expect(configs.map((c) => c.name)).to.deep.equal(["Si", "Ge"]);
     });
 });
 

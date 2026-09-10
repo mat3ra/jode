@@ -28,12 +28,14 @@ export function renderConfigsFromJobMaterialsWorkflows({
     job,
     materials,
     materialsSet,
+    scopeGlobal,
     isMultiMaterial = false,
 }: {
     job: NamedJob;
     materials: OrderedMaterial[];
     isMultiMaterial?: boolean;
     materialsSet?: object;
+    scopeGlobal?: Record<string, unknown>;
 }): ReturnType<Job["toJSON"]>[] {
     const originalName = job.name ?? "New Job";
     const configs: ReturnType<Job["toJSON"]>[] = [];
@@ -48,13 +50,13 @@ export function renderConfigsFromJobMaterialsWorkflows({
             job.setMaterialsSet(materialsSet as Parameters<Job["setMaterialsSet"]>[0]);
         }
 
-        job.render();
+        job.render(scopeGlobal);
         configs.push(job.toJSON());
     } else {
         materials.forEach((material) => {
             job.setName(renderJinjaTemplate(originalName, { material }));
             job.setMaterial(material);
-            job.render();
+            job.render(scopeGlobal);
 
             const jobConfig = job.toJSON();
             delete jobConfig._materials;
