@@ -30,7 +30,7 @@
     "license": "Apache-2.0",
     "homepage": "https://github.com/mat3ra/jode",
     "dependencies": {
-        "swig": "^1.4.2"
+        "nunjucks": "^3.2.4"
     },
     "peerDependencies": {
         "@mat3ra/code": "*",

@@ -1,9 +1,6 @@
 import type { NamedInMemoryEntity } from "@mat3ra/code/dist/js/entity";
 import type { OrderedMaterial } from "@mat3ra/wode";
-// @ts-expect-error — swig does not have maintained TS types
-// Constraint: Swig is compiled on in-memory strings only. Do not use file-loading features
-// (like {% extends %}/{% include %}) in browser environments as fs polyfills are empty stubs.
-import jinja from "swig";
+import nunjucks from "nunjucks";
 
 import { SINGLE_JOB_SUFFIX } from "./enums";
 import type { Job } from "./Job";
@@ -12,26 +9,12 @@ import type { Job } from "./Job";
 type NamedJob = Job & Pick<NamedInMemoryEntity, "name" | "setName">;
 
 /**
- * Renders a Jinja/Swig template string with a given context object.
- *
- * Deliberately `precompile` + `run` rather than `compile(content)(context)`. Swig's `compile`
- * ends with `utils.extend(compiled, pre.tokens)` (swig.js:622), copying token metadata - which
- * includes a `name` key - onto the compiled function. `Function.prototype.name` is not writable,
- * so that assignment throws `TypeError: Cannot assign to read only property 'name' of function`
- * in strict mode, for ANY template, even one with no interpolation at all.
- *
- * It goes unnoticed under CommonJS (sloppy mode silently ignores the failed assignment), which is
- * why Node and the Meteor bundle are fine, but any ESM bundle - e.g. Vite pre-bundling this
- * package for job-designer's standalone app - is strict and crashes on every job save.
- *
- * `run(tpl, locals)` invokes the same precompiled template function with swig's own filters/utils,
- * exactly as `compiled()` would, and simply never touches the function object. No template
- * features are lost; `compile`'s result caching is not either, since it only caches when an
- * `options.filename` is supplied and this call site never supplies one.
+ * Renders a Jinja-style template string with a given context object. Only ever used here for
+ * plain `{{ variable }}` interpolation (job/material names) - do not use file-loading features
+ * (`{% extends %}`/`{% include %}`) in browser environments, since fs polyfills are empty stubs.
  */
 export function renderJinjaTemplate(content: string, context: object = {}): string {
-    const { tpl } = jinja.precompile(content);
-    return jinja.run(tpl, context);
+    return nunjucks.renderString(content, context);
 }
 
 /**
