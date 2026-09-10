@@ -10,11 +10,7 @@ import {
     SINGLE_JOB_SUFFIX,
 } from "../../src/js/enums";
 import { type JobEntity, Job } from "../../src/js/Job";
-import {
-    renderConfigsFromJobMaterialsWorkflows,
-    renderJinjaTemplate,
-    setJobNameBasedOnMaterials,
-} from "../../src/js/utils";
+import { renderConfigsFromJobMaterialsWorkflows, renderJinjaTemplate } from "../../src/js/utils";
 
 // ─── Minimal fixtures ────────────────────────────────────────────────────────
 
@@ -189,6 +185,26 @@ describe("Job", () => {
             expect(job.submittedTimestamp?.status).to.equal("submitted");
         });
     });
+
+    describe("setNameBasedOnMaterials", () => {
+        it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
+            const workflow = new WodeWorkflow(minimalWorkflowJson);
+            const job = new Job({
+                name: "My Job",
+                status: JobStatus.pre_submission,
+                workflow: minimalWorkflowJson,
+            } as unknown as JobEntity);
+            job._workflow = workflow;
+            const materials = [
+                { _id: "1" } as unknown as OrderedMaterial,
+                { _id: "2" } as unknown as OrderedMaterial,
+            ];
+
+            job.setNameBasedOnMaterials(materials);
+
+            expect(job.name).to.equal(`My Job ${SINGLE_JOB_SUFFIX}`);
+        });
+    });
 });
 
 function makeMaterial(formula: string): OrderedMaterial {
@@ -260,25 +276,5 @@ describe("renderJinjaTemplate", () => {
                 },
             ),
         ).to.equal("C");
-    });
-});
-
-describe("setJobNameBasedOnMaterials", () => {
-    it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
-        const workflow = new WodeWorkflow(minimalWorkflowJson);
-        const job = new Job({
-            name: "My Job",
-            status: JobStatus.pre_submission,
-            workflow: minimalWorkflowJson,
-        } as unknown as JobEntity);
-        job._workflow = workflow;
-        const materials = [
-            { _id: "1" } as unknown as OrderedMaterial,
-            { _id: "2" } as unknown as OrderedMaterial,
-        ];
-
-        setJobNameBasedOnMaterials(job, materials);
-
-        expect(job.name).to.equal(`My Job ${SINGLE_JOB_SUFFIX}`);
     });
 });

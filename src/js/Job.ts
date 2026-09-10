@@ -23,7 +23,7 @@ import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
 import type { WorkflowSchema } from "@mat3ra/wode/dist/js/workflows/types";
 
 import { defaultDataset } from "./dataset";
-import { JOB_FINAL_STATUS_LIST, JobStatus } from "./enums";
+import { JOB_FINAL_STATUS_LIST, JobStatus, SINGLE_JOB_SUFFIX } from "./enums";
 import {
     type HasProjectSchemaMixin,
     hasProjectSchemaMixin,
@@ -140,6 +140,32 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
             jobHasParent: Boolean(this.parent),
             scopeGlobal,
         });
+    }
+
+    /**
+     * Updates the job name to append or remove the per-material jinja suffix based on
+     * whether the job is multi-material and how many materials are selected.
+     */
+    setNameBasedOnMaterials(materials: OrderedMaterial[]): void {
+        const isMultiMaterial = Boolean(this._workflow?.isMultiMaterial);
+        const hasMultipleMaterials = materials.length > 1;
+
+        /**
+         * Matches Jinja template expressions like:
+         *   {{object.property}}, {{object[index].property}}, {{object.property[index].subproperty}}
+         */
+        const hasJinjaPattern = (this.name ?? "").match(
+            /\{\{\s*\w+(\[\d+\]|\.\w+)*(\[\d+\])*\.\w+\s*\}\}/g,
+        );
+
+        if (!isMultiMaterial && hasMultipleMaterials && !hasJinjaPattern) {
+            this.setName(`${this.name} ${SINGLE_JOB_SUFFIX}`);
+        } else if (
+            (isMultiMaterial && hasJinjaPattern) ||
+            (!hasMultipleMaterials && hasJinjaPattern)
+        ) {
+            this.setName((this.name ?? "").replace(SINGLE_JOB_SUFFIX, "").replace(/\s*$/, ""));
+        }
     }
 
     // ─── Status Helpers ─────────────────────────────────────────────────────────

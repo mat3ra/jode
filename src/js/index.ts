@@ -10,8 +10,4 @@ export {
 } from "./enums";
 export { Job, type EntityReference, type JobEntity } from "./Job";
 export { type JobSchemaMixin } from "./generated/JobSchemaMixin";
-export {
-    renderJinjaTemplate,
-    renderConfigsFromJobMaterialsWorkflows,
-    setJobNameBasedOnMaterials,
-} from "./utils";
+export { renderJinjaTemplate, renderConfigsFromJobMaterialsWorkflows } from "./utils";
