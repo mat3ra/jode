@@ -1,6 +1,11 @@
+import JSONSchemasInterface from "@mat3ra/esse/dist/js/esse/JSONSchemasInterface";
+import esseSchemas from "@mat3ra/esse/dist/js/schemas.json";
+import { Material } from "@mat3ra/made";
+import { MaterialStandata } from "@mat3ra/standata";
 import type { OrderedMaterial } from "@mat3ra/wode";
 import WodeWorkflow from "@mat3ra/wode/dist/js/Workflow";
 import { expect } from "chai";
+import type { JSONSchema7 } from "json-schema";
 
 import { defaultDataset } from "../../src/js/dataset";
 import {
@@ -207,14 +212,33 @@ describe("Job", () => {
     });
 });
 
-function makeMaterial(formula: string): OrderedMaterial {
-    return {
-        formula,
-        getAsEntityReference: () => ({ _id: formula }),
-    } as unknown as OrderedMaterial;
+type MaterialConfig = ConstructorParameters<typeof Material>[0];
+
+const SILICON_STANDATA_NAME = "Si, Silicon, FCC (Fd-3m) 3D (Bulk), mp-149";
+const GERMANIUM_STANDATA_NAME = "Ge, Germanium, FCC (Fd-3m) 3D (Bulk), mp-32";
+
+/**
+ * Builds a real Material from the standata catalog. Standata entries are not persisted,
+ * so they carry no `_id`; one is assigned here so `getAsEntityReference` works as it does
+ * for a stored material.
+ */
+function makeStandataMaterial(standataName: string): OrderedMaterial {
+    const config = (new MaterialStandata().getAll() as MaterialConfig[]).find(
+        (material) => material.name === standataName,
+    );
+
+    if (!config) {
+        throw new Error(`Standata material not found: ${standataName}`);
+    }
+
+    return new Material({ ...config, _id: standataName }) as unknown as OrderedMaterial;
 }
 
 describe("renderConfigsFromJobMaterialsWorkflows", () => {
+    before(() => {
+        JSONSchemasInterface.setSchemas(esseSchemas as JSONSchema7[]);
+    });
+
     it("passes scopeGlobal through to job.render for each material", () => {
         const job = new Job(makeJobConfig());
         const renderCalls: (Record<string, unknown> | undefined)[] = [];
@@ -229,7 +253,7 @@ describe("renderConfigsFromJobMaterialsWorkflows", () => {
 
         renderConfigsFromJobMaterialsWorkflows({
             job,
-            materials: [makeMaterial("Si")],
+            materials: [makeStandataMaterial(SILICON_STANDATA_NAME)],
             scopeGlobal,
         });
 
@@ -238,7 +262,10 @@ describe("renderConfigsFromJobMaterialsWorkflows", () => {
 
     it("renders one config per material when not multi-material", () => {
         const job = new Job(makeJobConfig({ name: "{{ material.formula }}" }));
-        const materials = [makeMaterial("Si"), makeMaterial("Ge")];
+        const materials = [
+            makeStandataMaterial(SILICON_STANDATA_NAME),
+            makeStandataMaterial(GERMANIUM_STANDATA_NAME),
+        ];
 
         const configs = renderConfigsFromJobMaterialsWorkflows({ job, materials });
 
