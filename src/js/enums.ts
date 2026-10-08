@@ -55,7 +55,6 @@ export function JOB_STATUS_CLS(status?: JobStatus): string {
     return colors[status] || "default";
 }
 
-
 export const JOB_MODES = {
     normal: "normal",
     parse_only: "parse-only",
