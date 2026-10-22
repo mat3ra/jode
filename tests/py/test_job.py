@@ -1,8 +1,11 @@
 """Tests for the Job Python class."""
 
+from copy import deepcopy
+
 import pytest
 from mat3ra.jode import Job, JOB_FINAL_STATUSES
 from mat3ra.made.material import Material, defaultMaterialConfig
+from mat3ra.standata.workflows import WorkflowStandata
 from mat3ra.wode.workflows.workflow import Workflow
 
 
@@ -106,7 +109,7 @@ def test_create_render_and_reload(monkeypatch):
     monkeypatch.setattr(Workflow, "render", render)
     assert contexts == []
     job.render()
-    assert contexts == [{"material": material, "jobHasParent": False}]
+    assert contexts == [{"material": material, "materials": [material], "materialsSet": None, "jobHasParent": False}]
     assert workflow.name == "Calculation"
     serialized = job.to_dict()
     assert serialized["workflow"]["name"] == "Rendered"
@@ -138,3 +141,95 @@ def test_parent_context_and_material_without_identifier(monkeypatch):
     job.render()
     assert contexts[0]["jobHasParent"] is True
     assert "_material" not in job.to_dict()
+
+
+def test_multi_material_factory_render_and_reload(monkeypatch):
+    materials = [Material.create({**defaultMaterialConfig, "_id": f"material-{index}"}) for index in range(2)]
+    workflow = Workflow(name="Multiple materials", isMultiMaterial=True)
+    job = Job.create_from_workflow(workflow, materials, _materialsSet={"_id": "set-1"}, **make_job_config())
+    contexts = []
+    monkeypatch.setattr(Workflow, "render", lambda instance, context: contexts.append(context))
+    job.render()
+    assert contexts == [
+        {
+            "material": materials[0],
+            "materials": materials,
+            "materialsSet": {"_id": "set-1"},
+            "jobHasParent": False,
+        }
+    ]
+    serialized = job.to_dict()
+    assert serialized["_materials"] == [{"_id": "material-0"}, {"_id": "material-1"}]
+    assert "_material" not in serialized
+    assert "_material_instances" not in serialized
+    restored = Job.from_json(job.to_json())
+    with pytest.raises(ValueError, match="set_materials"):
+        restored.render()
+    restored.set_materials(materials)
+    restored.render()
+    assert contexts[0] == contexts[1]
+    # Rebinding a single material must not leave stale multi-material references.
+    restored.set_material(materials[1])
+    restored.render()
+    assert contexts[-1]["materials"] == [materials[1]]
+    assert "_materials" not in restored.to_dict()
+
+
+def test_multi_material_without_identifiers_keeps_order_without_partial_references(monkeypatch):
+    materials = [
+        Material.create({**defaultMaterialConfig, "_id": "identified"}),
+        Material.create(defaultMaterialConfig),
+    ]
+    job = Job.create_from_workflow(Workflow(name="Multiple", isMultiMaterial=True), materials, **make_job_config())
+    contexts = []
+    monkeypatch.setattr(Workflow, "render", lambda instance, context: contexts.append(context))
+    job.render()
+    assert contexts[0]["materials"] == materials
+    assert "_materials" not in job.to_dict()
+
+
+@pytest.mark.parametrize("is_multi_material", [False, True])
+def test_empty_material_list_fails(is_multi_material):
+    with pytest.raises(ValueError, match="at least one material"):
+        Job.create_from_workflow(Workflow(name="Empty", isMultiMaterial=is_multi_material), [], **make_job_config())
+
+
+def test_multi_material_factory_accepts_one_material():
+    material = Material.create({**defaultMaterialConfig, "_id": "material-1"})
+    job = Job.create_from_workflow(Workflow(name="Multiple", isMultiMaterial=True), material, **make_job_config())
+    assert job.to_dict()["_materials"] == [{"_id": "material-1"}]
+
+
+def test_single_material_factory_uses_first_list_item_like_javascript():
+    materials = [Material.create({**defaultMaterialConfig, "_id": f"material-{index}"}) for index in range(2)]
+    job = Job.create_from_workflow(Workflow(name="Single"), materials, **make_job_config())
+    assert job.to_dict()["_material"] == {"_id": "material-0"}
+    assert "_materials" not in job.to_dict()
+
+
+def test_render_standata_multimaterial_job():
+    definition = deepcopy(WorkflowStandata.find_by_application_and_name("espresso", "Interfacial Energy"))
+    materials = [Material.create({**defaultMaterialConfig, "_id": f"material-{index}"}) for index in range(3)]
+    for subworkflow in definition["subworkflows"]:
+        for unit in subworkflow["units"]:
+            if unit["type"] == "execution":
+                subworkflow["model"]["method"]["subtype"] = "paw"
+                subworkflow["model"]["method"]["data"]["pseudo"] = [{"element": "Si", "filename": "Si.upf"}]
+                unit["context"] = [
+                    {"name": "cutoffs", "data": {"wavefunction": 24, "density": 192}},
+                    {"name": "kgrid", "data": {"dimensions": [4, 4, 4]}},
+                ]
+    job = Job.create_from_workflow(Workflow(**definition), materials, **make_job_config())
+    job.render()
+    serialized = job.to_dict()
+    assert serialized["_materials"] == [{"_id": f"material-{index}"} for index in range(3)]
+    inputs = [
+        item["rendered"]
+        for subworkflow in serialized["workflow"]["subworkflows"]
+        for unit in subworkflow["units"]
+        if unit["type"] == "execution"
+        for item in unit["input"]
+    ]
+    assert len(inputs) == 1
+    assert "Si 28.085000 Si.upf" in inputs[0]
+    assert "4 4 4 0 0 0" in inputs[0]

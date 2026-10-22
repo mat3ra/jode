@@ -1,7 +1,7 @@
 [![npm version](https://badge.fury.io/js/%40mat3ra%2Fjode.svg)](https://badge.fury.io/js/%40mat3ra%2Fjode)
 [![License: Apache](https://img.shields.io/badge/License-Apache-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-# Jode
+# JoDe
 
 JOb DEsign elements — non-visual Job class, enums, and utilities.
 
@@ -17,7 +17,7 @@ npm install @mat3ra/jode
 pip install mat3ra-jode
 ```
 
-Create a job from a WODE workflow and a MADE material, then render explicitly:
+Create a job from a WoDe workflow and a MADE material, then render explicitly:
 
 ```python
 from mat3ra.jode import Job
@@ -33,12 +33,20 @@ job_json = job.to_json()
 ```
 
 The factory keeps the ordinary Pydantic constructor and accepts additional job
-configuration as keyword arguments. Rendering delegates to WODE; execution belongs
-to a job runtime. It does not change the supplied workflow. The live material is
-private and excluded from serialization; `_material` contains its entity reference
-when it has an ID. After loading a job from JSON, call `job.set_material(material)`
-before rendering again. WODE currently supports single-material QE SCF rendering;
-unsupported providers and geometry raise errors.
+configuration as keyword arguments. Rendering delegates to WoDe; execution belongs
+to a job runtime. It does not change the supplied workflow.
 
-This draft temporarily pins [WODE #169](https://github.com/mat3ra/wode/pull/169)
-by commit. Replace the pin with its published version after WODE is merged and released.
+For `workflow.isMultiMaterial`, pass an ordered list of materials (or one material).
+The factory binds the list with `set_materials()` and rendering passes both the primary
+material and the full list to WoDe. As in JavaScript, a single-material workflow uses
+the first material when given a list. Empty lists fail.
+
+Live materials are private and excluded from serialization. `_material` contains a
+single entity reference when available; `_materials` contains the ordered references
+only when every material has an ID, avoiding a partial list that changes indexing.
+After loading JSON, call `set_material()` or `set_materials()` before rendering again.
+WoDe supports QE SCF rendering with material-index selection; unsupported providers
+and geometry raise errors.
+
+This draft temporarily pins [WoDe #169](https://github.com/mat3ra/wode/pull/169)
+by commit. Replace the pin with its published version after WoDe is merged and released.
