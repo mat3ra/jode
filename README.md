@@ -45,8 +45,10 @@ Live materials are private and excluded from serialization. `_material` contains
 single entity reference when available; `_materials` contains the ordered references
 only when every material has an ID, avoiding a partial list that changes indexing.
 After loading JSON, call `set_material()` or `set_materials()` before rendering again.
-WoDe supports QE SCF rendering with material-index selection; unsupported providers
-and geometry raise errors.
+WoDe supports QE SCF rendering; STANDATA's `pw_scf_volume_scaled` flavor handles
+material-index selection. The ordinary `pw_scf` flavor is unchanged. Unsupported
+providers and geometry raise errors.
 
 This draft temporarily pins [WoDe #169](https://github.com/mat3ra/wode/pull/169)
 by commit. Replace the pin with its published version after WoDe is merged and released.
+WoDe uses the published utils `2026.10.22.post0` and STANDATA `2026.10.22.post1` releases.

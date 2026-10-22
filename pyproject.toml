@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "mat3ra-code", "mat3ra-esse", "mat3ra-made",
-    "mat3ra-wode @ git+https://github.com/mat3ra/wode.git@7a923bf8703a06b61ea397665676b73331e1ce3a",
+    "mat3ra-wode @ git+https://github.com/mat3ra/wode.git@d377f274cde8cd116792b67ece50d3061c81ef6e",
 ]
 
 [project.optional-dependencies]

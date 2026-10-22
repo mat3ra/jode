@@ -208,9 +208,16 @@ def test_single_material_factory_uses_first_list_item_like_javascript():
 
 
 def test_render_standata_multimaterial_job():
-    definition = deepcopy(WorkflowStandata.find_by_application_and_name("espresso", "Interfacial Energy"))
+    definition = deepcopy(WorkflowStandata.find_by_application_and_name("espresso", "Equation of State"))
+    definition["isMultiMaterial"] = True
     materials = [Material.create({**defaultMaterialConfig, "_id": f"material-{index}"}) for index in range(3)]
+    selected_material = materials[2].to_dict()
+    selected_material["basis"]["coordinates"][1]["value"] = [0.375, 0.375, 0.375]
+    materials[2] = Material.create(selected_material)
     for subworkflow in definition["subworkflows"]:
+        subworkflow["units"].append(
+            {"type": "assignment", "name": "material-index", "operand": "MATERIAL_INDEX", "value": "2"}
+        )
         for unit in subworkflow["units"]:
             if unit["type"] == "execution":
                 subworkflow["model"]["method"]["subtype"] = "paw"
@@ -232,4 +239,5 @@ def test_render_standata_multimaterial_job():
     ]
     assert len(inputs) == 1
     assert "Si 28.085000 Si.upf" in inputs[0]
+    assert "Si     0.375000000    0.375000000    0.375000000" in inputs[0]
     assert "4 4 4 0 0 0" in inputs[0]
