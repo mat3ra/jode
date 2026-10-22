@@ -49,6 +49,6 @@ WoDe supports QE SCF rendering; STANDATA's `pw_scf_volume_scaled` flavor handles
 material-index selection. The ordinary `pw_scf` flavor is unchanged. Unsupported
 providers and geometry raise errors.
 
-This draft temporarily pins [WoDe #169](https://github.com/mat3ra/wode/pull/169)
-by commit. Replace the pin with its published version after WoDe is merged and released.
+Python rendering requires `mat3ra-wode>=2026.10.22.post0`, the published release of
+[WoDe #169](https://github.com/mat3ra/wode/pull/169).
 WoDe uses the published utils `2026.10.22.post0` and STANDATA `2026.10.22.post1` releases.

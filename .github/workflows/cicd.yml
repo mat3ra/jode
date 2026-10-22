@@ -74,7 +74,7 @@ jobs:
 
   publish-py-package:
     needs: [run-js-tests, run-py-tests, run-py-linter, publish-js-package]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v7
