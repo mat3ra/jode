@@ -3,9 +3,11 @@
 from typing import Any, Dict, List, Optional
 
 from mat3ra.code.entity import InMemoryEntitySnakeCase
-from mat3ra.esse.models.job.base import JobBaseSchema
+from mat3ra.esse.models.job.base import EntityReferenceSchema, JobBaseSchema
 from mat3ra.esse.models.system.job_extended import ExtendedJobSchema
-from pydantic import Field
+from mat3ra.made.material import Material
+from mat3ra.wode.workflows.workflow import Workflow
+from pydantic import Field, PrivateAttr
 
 
 JOB_FINAL_STATUSES = ["finished", "error", "terminated", "timeout"]
@@ -26,6 +28,37 @@ class Job(JobBaseSchema, ExtendedJobSchema, InMemoryEntitySnakeCase):
     """
 
     status_track: List[Dict[str, Any]] = Field(default_factory=list, alias="statusTrack")
+    workflow: Optional[Dict[str, Any]] = None
+    _material_instance: Optional[Material] = PrivateAttr(default=None)
+
+    @classmethod
+    def create_from_workflow(cls, workflow: Workflow, material: Material, **configuration: Any) -> "Job":
+        """Create a job; callers supply project and compute settings. Rendering is explicit."""
+        job = cls(
+            **{
+                "name": workflow.name,
+                "status": "pre-submission",
+                **configuration,
+                "workflow": workflow.to_dict(),
+            }
+        )
+        job.set_material(material)
+        return job
+
+    def set_material(self, material: Material) -> None:
+        """Bind a live material without embedding it in the job's entity reference."""
+        self._material_instance = material
+        self.material = EntityReferenceSchema(_id=material.id) if material.id else None
+
+    def render(self) -> None:
+        """Render through WODE. Rebind the material after loading a job from JSON."""
+        if self._material_instance is None:
+            raise ValueError("Bind a material with set_material() before rendering")
+        if self.workflow is None:
+            raise ValueError("Workflow not found")
+        workflow = Workflow(**self.workflow)
+        workflow.render({"material": self._material_instance, "jobHasParent": self.parent is not None})
+        self.workflow = workflow.to_dict()
 
     @property
     def is_in_final_status(self) -> bool:

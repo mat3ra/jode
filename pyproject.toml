@@ -16,7 +16,10 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Topic :: Software Development",
 ]
-dependencies = ["mat3ra-code", "mat3ra-esse", "mat3ra-made", "mat3ra-wode"]
+dependencies = [
+    "mat3ra-code", "mat3ra-esse", "mat3ra-made",
+    "mat3ra-wode @ git+https://github.com/mat3ra/wode.git@63d1bf94cd940b4084c6a818851fadfcf26c4766",
+]
 
 [project.optional-dependencies]
 dev = ["pre-commit", "black", "ruff", "isort", "mypy", "pip-tools"]

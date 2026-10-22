@@ -1,6 +1,9 @@
 """Tests for the Job Python class."""
 
+import pytest
 from mat3ra.jode import Job, JOB_FINAL_STATUSES
+from mat3ra.made.material import Material, defaultMaterialConfig
+from mat3ra.wode.workflows.workflow import Workflow
 
 
 MINIMAL_COMPUTE = {
@@ -88,3 +91,50 @@ def test_to_dict():
     data = job.to_dict()
     assert data["name"] == "Test Job"
     assert data["status"] == "pre-submission"
+
+
+def test_create_render_and_reload(monkeypatch):
+    material = Material.create({**defaultMaterialConfig, "_id": "material-1"})
+    workflow = Workflow(name="Calculation")
+    job = Job.create_from_workflow(workflow, material, compute=MINIMAL_COMPUTE, _project=MINIMAL_PROJECT)
+    contexts = []
+
+    def render(instance, context):
+        contexts.append(context)
+        instance.name = "Rendered"
+
+    monkeypatch.setattr(Workflow, "render", render)
+    assert contexts == []
+    job.render()
+    assert contexts == [{"material": material, "jobHasParent": False}]
+    assert workflow.name == "Calculation"
+    serialized = job.to_dict()
+    assert serialized["workflow"]["name"] == "Rendered"
+    assert serialized["_material"] == {"_id": "material-1"}
+    assert "_material_instance" not in serialized
+    restored = Job.from_json(job.to_json())
+    with pytest.raises(ValueError, match="set_material"):
+        restored.render()
+    restored.set_material(material)
+    restored.render()
+    assert len(contexts) == 2
+
+
+def test_render_requires_workflow():
+    job = Job(**make_job_config())
+    job.set_material(Material.create(defaultMaterialConfig))
+    with pytest.raises(ValueError, match="Workflow not found"):
+        job.render()
+
+
+def test_parent_context_and_material_without_identifier(monkeypatch):
+    job = Job.create_from_workflow(
+        Workflow(name="Calculation"),
+        Material.create(defaultMaterialConfig),
+        **make_job_config({"parent": {"_id": "parent-1"}}),
+    )
+    contexts = []
+    monkeypatch.setattr(Workflow, "render", lambda instance, context: contexts.append(context))
+    job.render()
+    assert contexts[0]["jobHasParent"] is True
+    assert "_material" not in job.to_dict()
