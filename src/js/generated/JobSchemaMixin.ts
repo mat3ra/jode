@@ -38,7 +38,7 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
             return this.prop("_material");
         },
         set _material(value: BaseJobSchema["_material"]) {
-            this.setProp("_material", InMemoryEntity.getDataForEntity(value));
+            this.setProp("_material", InMemoryEntity.toStoredData(value));
         },
         get _materials() {
             return this.prop("_materials");
@@ -46,26 +46,26 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
         set _materials(value: BaseJobSchema["_materials"]) {
             this.setProp(
                 "_materials",
-                value?.map((item) => InMemoryEntity.getDataForEntity(item)),
+                value?.map((item) => InMemoryEntity.toStoredData(item)),
             );
         },
         get _materialsSet() {
             return this.prop("_materialsSet");
         },
         set _materialsSet(value: BaseJobSchema["_materialsSet"]) {
-            this.setProp("_materialsSet", InMemoryEntity.getDataForEntity(value));
+            this.setProp("_materialsSet", InMemoryEntity.toStoredData(value));
         },
         get parent() {
             return this.prop("parent");
         },
         set parent(value: BaseJobSchema["parent"]) {
-            this.setProp("parent", InMemoryEntity.getDataForEntity(value));
+            this.setProp("parent", InMemoryEntity.toStoredData(value));
         },
         get runtimeContext() {
             return this.prop("runtimeContext");
         },
         set runtimeContext(value: BaseJobSchema["runtimeContext"]) {
-            this.setProp("runtimeContext", InMemoryEntity.getDataForEntity(value));
+            this.setProp("runtimeContext", InMemoryEntity.toStoredData(value));
         },
         get scopeTrack() {
             return this.prop("scopeTrack");
@@ -73,14 +73,14 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
         set scopeTrack(value: BaseJobSchema["scopeTrack"]) {
             this.setProp(
                 "scopeTrack",
-                value?.map((item) => InMemoryEntity.getDataForEntity(item)),
+                value?.map((item) => InMemoryEntity.toStoredData(item)),
             );
         },
         get dataset() {
             return this.prop("dataset");
         },
         set dataset(value: BaseJobSchema["dataset"]) {
-            this.setProp("dataset", InMemoryEntity.getDataForEntity(value));
+            this.setProp("dataset", InMemoryEntity.toStoredData(value));
         },
         get purged() {
             return this.prop("purged");
@@ -98,7 +98,7 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
             return this.requiredProp("compute");
         },
         set compute(value: BaseJobSchema["compute"]) {
-            this.setProp("compute", InMemoryEntity.getDataForEntity(value));
+            this.setProp("compute", InMemoryEntity.toStoredData(value));
         },
         get statusTrack() {
             return this.prop("statusTrack");
@@ -106,7 +106,7 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
         set statusTrack(value: BaseJobSchema["statusTrack"]) {
             this.setProp(
                 "statusTrack",
-                value?.map((item) => InMemoryEntity.getDataForEntity(item)),
+                value?.map((item) => InMemoryEntity.toStoredData(item)),
             );
         },
     };

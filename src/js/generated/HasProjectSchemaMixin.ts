@@ -16,7 +16,7 @@ export function hasProjectSchemaMixin<T extends InMemoryEntity>(
             return this.requiredProp("_project");
         },
         set _project(value: HasProjectSchema["_project"]) {
-            this.setProp("_project", InMemoryEntity.getDataForEntity(value));
+            this.setProp("_project", InMemoryEntity.toStoredData(value));
         },
     };
 

@@ -91,7 +91,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
         // `setProp`'s signature (`value: S[typeof name]`) isn't call-site generic, so it widens
         // to `S[keyof S]` here rather than narrowing to `S["workflow"]` - same gap wode's own
         // `Workflow.workflows` setter works around the same way.
-        (this._json as JobEntity).workflow = InMemoryEntity.getDataForEntity(value);
+        (this._json as JobEntity).workflow = InMemoryEntity.toStoredData(value);
     }
 
     toJSON(): S {
@@ -250,7 +250,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
         if (!workflow) {
             throw new Error("Workflow not found");
         }
-        return InMemoryEntity.getEntityForData(workflow, (data) => new WodeWorkflow(data));
+        return InMemoryEntity.getOrCreateEntity(workflow, (data) => new WodeWorkflow(data));
     }
 
     setWorkflow(workflowInstance: WodeWorkflow): void {
