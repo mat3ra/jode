@@ -58,9 +58,7 @@ describe("Job", () => {
         it("initializes a WodeWorkflow instance from the workflow JSON", () => {
             const job = new Job(makeJobConfig());
 
-            // eslint-disable-next-line no-unused-expressions
-            expect(job._workflow).to.exist;
-            expect(job._workflow?.name).to.equal("Total Energy");
+            expect(job.workflowInstance.name).to.equal("Total Energy");
         });
     });
 
@@ -130,6 +128,14 @@ describe("Job", () => {
             expect((job.workflow as { name?: string } | undefined)?.name).to.equal("Band Gap");
         });
 
+        it("keeps a change made on the workflow instance in the job's workflow", () => {
+            const job = new Job(makeJobConfig());
+
+            job.workflowInstance.setProp("name", "Band Gap");
+
+            expect(job.workflow).to.have.property("name", "Band Gap");
+        });
+
         it("throws when accessing .workflowInstance when no workflow is set", () => {
             const job = new Job({
                 name: "No Workflow",
@@ -193,13 +199,11 @@ describe("Job", () => {
 
     describe("setNameBasedOnMaterials", () => {
         it("appends jinja suffix when multi materials and no existing jinja pattern", () => {
-            const workflow = new WodeWorkflow(minimalWorkflowJson);
             const job = new Job({
                 name: "My Job",
                 status: JobStatus.pre_submission,
                 workflow: minimalWorkflowJson,
             } as unknown as JobEntity);
-            job._workflow = workflow;
             const materials = [
                 { _id: "1" } as unknown as OrderedMaterial,
                 { _id: "2" } as unknown as OrderedMaterial,

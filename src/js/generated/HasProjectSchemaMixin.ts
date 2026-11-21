@@ -1,4 +1,4 @@
-import type { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
+import { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
 import type { BaseInMemoryEntitySchema, HasProjectSchema } from "@mat3ra/esse/dist/js/types";
 
 export type HasProjectSchemaMixin = Omit<HasProjectSchema, "workflow">;
@@ -16,7 +16,10 @@ export function hasProjectSchemaMixin<T extends InMemoryEntity>(
             return this.requiredProp("_project");
         },
         set _project(value: HasProjectSchema["_project"]) {
-            this.setProp("_project", value);
+            this.setProp(
+                "_project",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
     };
 

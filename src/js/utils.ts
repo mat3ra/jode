@@ -38,7 +38,7 @@ export function renderConfigsFromJobMaterialsWorkflows({
 }): ReturnType<Job["toJSON"]>[] {
     const originalName = job.name ?? "New Job";
     const configs: ReturnType<Job["toJSON"]>[] = [];
-    const isMultiMaterialJob = isMultiMaterial || Boolean(job._workflow?.isMultiMaterial);
+    const isMultiMaterialJob = isMultiMaterial || Boolean(job.prop("workflow")?.isMultiMaterial);
 
     if (isMultiMaterialJob) {
         job.setName(renderJinjaTemplate(originalName, { materials }));

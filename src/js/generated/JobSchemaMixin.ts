@@ -1,4 +1,4 @@
-import type { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
+import { InMemoryEntity } from "@mat3ra/code/dist/js/entity";
 import type { BaseInMemoryEntitySchema, BaseJobSchema } from "@mat3ra/esse/dist/js/types";
 
 export type JobSchemaMixin = Omit<BaseJobSchema, "workflow">;
@@ -38,43 +38,68 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
             return this.prop("_material");
         },
         set _material(value: BaseJobSchema["_material"]) {
-            this.setProp("_material", value);
+            this.setProp(
+                "_material",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get _materials() {
             return this.prop("_materials");
         },
         set _materials(value: BaseJobSchema["_materials"]) {
-            this.setProp("_materials", value);
+            this.setProp(
+                "_materials",
+                value?.map((item: unknown) =>
+                    item instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(item) : item,
+                ),
+            );
         },
         get _materialsSet() {
             return this.prop("_materialsSet");
         },
         set _materialsSet(value: BaseJobSchema["_materialsSet"]) {
-            this.setProp("_materialsSet", value);
+            this.setProp(
+                "_materialsSet",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get parent() {
             return this.prop("parent");
         },
         set parent(value: BaseJobSchema["parent"]) {
-            this.setProp("parent", value);
+            this.setProp(
+                "parent",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get runtimeContext() {
             return this.prop("runtimeContext");
         },
         set runtimeContext(value: BaseJobSchema["runtimeContext"]) {
-            this.setProp("runtimeContext", value);
+            this.setProp(
+                "runtimeContext",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get scopeTrack() {
             return this.prop("scopeTrack");
         },
         set scopeTrack(value: BaseJobSchema["scopeTrack"]) {
-            this.setProp("scopeTrack", value);
+            this.setProp(
+                "scopeTrack",
+                value?.map((item: unknown) =>
+                    item instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(item) : item,
+                ),
+            );
         },
         get dataset() {
             return this.prop("dataset");
         },
         set dataset(value: BaseJobSchema["dataset"]) {
-            this.setProp("dataset", value);
+            this.setProp(
+                "dataset",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get purged() {
             return this.prop("purged");
@@ -92,13 +117,21 @@ export function jobSchemaMixin<T extends InMemoryEntity>(
             return this.requiredProp("compute");
         },
         set compute(value: BaseJobSchema["compute"]) {
-            this.setProp("compute", value);
+            this.setProp(
+                "compute",
+                value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value,
+            );
         },
         get statusTrack() {
             return this.prop("statusTrack");
         },
         set statusTrack(value: BaseJobSchema["statusTrack"]) {
-            this.setProp("statusTrack", value);
+            this.setProp(
+                "statusTrack",
+                value?.map((item: unknown) =>
+                    item instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(item) : item,
+                ),
+            );
         },
     };
 

@@ -64,18 +64,17 @@ interface Job
  * where a host-level subclass may extend it with persistence and routing.
  */
 class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements JobEntity {
-    _workflow?: WodeWorkflow;
-
     /** Live material instance(s) - not part of the esse schema, never in `_json`/`toJSON`. */
     material?: OrderedMaterial;
 
     materials?: OrderedMaterial[];
 
+    static _isDeepCloneRequired = true;
+
     constructor(config: NoInfer<S>) {
         super({ ...config, _materialsSet: config._materialsSet || undefined });
 
         this.dataset = this.dataset || defaultDataset;
-        this.initialize();
     }
 
     /**
@@ -92,32 +91,14 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
         // `setProp`'s signature (`value: S[typeof name]`) isn't call-site generic, so it widens
         // to `S[keyof S]` here rather than narrowing to `S["workflow"]` - same gap wode's own
         // `Workflow.workflows` setter works around the same way.
-        (this._json as JobEntity).workflow = value;
-    }
-
-    /**
-     * Initializes derived state (workflow instance, material references) from raw JSON.
-     */
-    initialize(): void {
-        // Optional read (not `this.workflow`, which throws via requiredProp): a job may be
-        // constructed without a workflow yet (e.g. before it's assigned via setWorkflow).
-        const workflow = this.prop("workflow");
-        if (workflow) {
-            this._workflow = new WodeWorkflow(workflow);
-        }
-    }
-
-    setProps(json: Partial<S>): this {
-        super.setProps(json);
-        this.initialize();
-
-        return this;
+        (this._json as JobEntity).workflow =
+            value instanceof InMemoryEntity ? InMemoryEntity.getDataForEntity(value) : value;
     }
 
     toJSON(): S {
         return {
             ...super.toJSON(),
-            workflow: this._workflow?.toJSON(),
+            workflow: this.prop("workflow") && this.workflowInstance.toJSON(),
         };
     }
 
@@ -130,10 +111,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
         if (!material) {
             throw new Error("Job must have a material and materials");
         }
-        if (!this._workflow) {
-            throw new Error("Workflow not found");
-        }
-        this._workflow.render({
+        this.workflowInstance.render({
             material,
             materials: this.materials || [material],
             materialsSet: this.materialsSet,
@@ -147,7 +125,7 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
      * whether the job is multi-material and how many materials are selected.
      */
     setNameBasedOnMaterials(materials: OrderedMaterial[]): void {
-        const isMultiMaterial = Boolean(this._workflow?.isMultiMaterial);
+        const isMultiMaterial = Boolean(this.prop("workflow")?.isMultiMaterial);
         const hasMultipleMaterials = materials.length > 1;
 
         /**
@@ -269,18 +247,15 @@ class Job<S extends JobEntity = JobEntity> extends InMemoryEntity<S> implements 
     // ─── Workflow ────────────────────────────────────────────────────────────────
 
     get workflowInstance(): WodeWorkflow {
-        if (!this._workflow) {
+        const workflow = this.prop("workflow");
+        if (!workflow) {
             throw new Error("Workflow not found");
         }
-        return this._workflow;
+        return InMemoryEntity.getEntityForData(workflow, (data) => new WodeWorkflow(data));
     }
 
     setWorkflow(workflowInstance: WodeWorkflow): void {
-        this._workflow = workflowInstance;
-        // Write straight to `_json`, not `this.workflow = ...` - a host subclass (e.g. web-app's
-        // `CoreJob`) may shadow the `workflow` accessor to mean the live instance, which would
-        // route this assignment back through `setWorkflow` and corrupt `_workflow`.
-        (this._json as JobEntity).workflow = this._workflow.toJSON();
+        this.workflow = workflowInstance;
     }
 
     get usedApplicationNames(): string[] {
